@@ -136,7 +136,8 @@ Die Abnahme muss physisch erfolgen, siehe [PILOT-CHECKLIST.md](PILOT-CHECKLIST.m
 - Lokaler echter Chrome: Gastformular -> geschütztes Ticket -> Ready,
   keine JavaScript-Seitenfehler und kein Berechtigungsdialog beim Laden.
   Mobile DE/AR und iOS-Hinweis wurden als Layout geprüft, kein Gerätetest.
-  Die vereinfachte Gäste-Datenschutzseite behält ihren Geschäfts-Rücklink.
+  Die vereinfachte Gäste-Datenschutzseite behält ihren Geschäfts-Rücklink;
+  ihre DE/EN-Inhalte bleiben auch bei arabischer Navigation links-nach-rechts.
 
 ## Quellen
 
