@@ -18,6 +18,8 @@
 - Getestet: Login (falsch/richtig/unkonfiguriert), Auth-Zwang, Sperren
   (Kunde + Personal blockiert), Entsperren (alles wieder da).
 
+Betriebshinweis: `railway up` setzt die Railway-Region auf den Standard (us-west2) zurueck; nach jedem Deploy `railway scale us-west2=0 eu-west=1` erneut anwenden (in DEPLOYMENT.md dokumentiert).
+
 ## 0.2.0 – 22.11.2026
 
 **QueueUp wird ein Multi-Tenant-SaaS.** Beliebig viele Geschäfte auf einer

@@ -77,7 +77,12 @@ npx railway variables --set "STAFF_PIN=<6-stellige-PIN>" --set "DATA_DIR=/data"
 npx railway volume add -m /data                 # persistentes Volume für SQLite
 npx railway domain                              # öffentliche URL erzeugen
 # Region EU (DSGVO):
-npx railway service scale iad=0 eu-west=1
+npx railway scale us-west2=0 eu-west=1
+
+# WICHTIG: `railway up` setzt die Region auf den Standard (us-west2) zurueck.
+# Nach JEDEM `railway up` die Region erneut anwenden:
+#   npx railway scale us-west2=0 eu-west=1
+# (Danach kurz warten und mit `railway status` pruefen: Region muss EU West sein.)
 ```
 
 Railway erkennt Node.js automatisch (Nixpacks) und startet mit `npm start`
