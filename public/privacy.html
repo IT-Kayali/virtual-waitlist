@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QueueUp – Datenschutz</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="landing-wrap privacy-wrap">
+  <div class="lang-picker" id="langPicker"></div>
+  <div class="card">
+    <h1>Datenschutzerklärung</h1>
+    <p class="muted">für <strong id="venueName">dieses Geschäft</strong> auf der QueueUp-Plattform</p>
+
+    <h2>1. Welche Daten werden gespeichert?</h2>
+    <p>Beim Einreihen in die Warteschlange speichern wir nur, was für den Ablauf nötig ist:</p>
+    <ul>
+      <li>Ihre <strong>Wartenummer</strong> und der Status Ihres Tickets,</li>
+      <li>optional Ihr <strong>Name</strong> (freiwillig, damit das Personal Sie aufrufen kann),</li>
+      <li>optional Ihre <strong>Bestellung/Notiz</strong>.</li>
+    </ul>
+    <p>Es gibt <strong>keine Registrierung für Gäste, keine Cookies, kein Tracking und keine Weitergabe</strong>
+    an Dritte. Die Daten sind nur für das jeweilige Geschäft sichtbar, strikt getrennt von anderen Geschäften.</p>
+
+    <h2>2. Wie lange werden die Daten gespeichert?</h2>
+    <p>Tickets werden automatisch gelöscht: abgeschlossene oder stornierte Tickets nach
+    <strong>24 Stunden</strong>, alle übrigen spätestens nach <strong>48 Stunden</strong>.
+    Danach sind keine personenbezogenen Daten des Besuchs mehr vorhanden.</p>
+
+    <h2>3. Wo werden die Daten gespeichert?</h2>
+    <p>Die Plattform wird bei <strong>Railway</strong> gehostet. Server-Standort:
+    <strong id="hostLocation">wird im Repository (docs/DEPLOYMENT.md) dokumentiert</strong>.
+    Die Datenbank liegt auf einem verschlüsselten Volume des Hosters.</p>
+
+    <h2>4. Ihre Rechte (DSGVO)</h2>
+    <p>Sie haben das Recht auf Auskunft, Berichtigung und Löschung Ihrer Daten.
+    Da Tickets automatisch spätestens nach 48 Stunden gelöscht werden und keine Konten für Gäste
+    existieren, ist Ihr Besuch danach nicht mehr nachvollziehbar. Für Fragen wenden Sie sich an
+    <strong id="venueName2">das Geschäft</strong> direkt oder an den Plattformbetreiber
+    (Kontakt im GitHub-Repository).</p>
+
+    <h2>5. Verantwortlicher</h2>
+    <p>Verantwortlich für die Verarbeitung Ihrer Wartelisten-Daten ist das jeweilige Geschäft,
+    dessen Warteschlange Sie nutzen. Die QueueUp-Plattform stellt lediglich die Software bereit.</p>
+
+    <p class="muted">English summary: We only store your queue number, optional name and order note.
+    No accounts, no cookies, no tracking. Tickets are deleted automatically after 24–48 hours.
+    Data is isolated per business. Contact the business for any privacy questions.</p>
+  </div>
+  <p class="privacy-foot"><a id="backLink" href="/">← QueueUp</a></p>
+</div>
+<script src="/i18n.js"></script>
+<script src="/privacy.js"></script>
+</body>
+</html>

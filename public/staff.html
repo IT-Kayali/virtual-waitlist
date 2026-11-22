@@ -12,7 +12,7 @@
 <div class="login-wrap" id="loginWrap">
   <div class="card">
     <h1>Staff Login</h1>
-    <p class="muted">Enter the staff PIN.</p>
+    <p class="muted">Enter the staff PIN for this business (business PIN or your personal employee PIN).</p>
     <form id="loginForm">
       <input type="password" id="pinInput" placeholder="PIN" inputmode="numeric" autocomplete="off">
       <p class="error" id="loginError"></p>
@@ -25,7 +25,10 @@
 <div class="staff-wrap hidden" id="dashWrap">
   <div class="staff-head">
     <h1 id="dashVenue">QueueUp</h1>
-    <button class="btn ghost small" id="logoutBtn">Log out</button>
+    <div>
+      <span class="muted" id="whoami"></span>
+      <button class="btn ghost small" id="logoutBtn">Log out</button>
+    </div>
   </div>
 
   <div class="stats-row">
@@ -54,6 +57,20 @@
     </form>
   </div>
 
+  <div class="card qr-card">
+    <h2>QR code: self-service</h2>
+    <p class="muted">Guests scan this and join the queue themselves.</p>
+    <img id="qrImg" alt="QR code for the join page">
+    <div class="qr-url" id="joinUrl"></div>
+  </div>
+
+  <div class="card qr-card">
+    <h2>QR code: counter / kiosk</h2>
+    <p class="muted">For the counter screen: the customer scans, your staff fills in the order on the customer's phone.</p>
+    <img id="qrKioskImg" alt="QR code for the counter page">
+    <div class="qr-url" id="kioskUrl"></div>
+  </div>
+
   <div class="card">
     <h2>Settings</h2>
     <label>Venue name</label>
@@ -63,11 +80,64 @@
     </div>
   </div>
 
-  <div class="card qr-card">
-    <h2>Customer QR code</h2>
-    <p class="muted">Print this and place it at the counter. Scanning opens the join page.</p>
-    <img id="qrImg" alt="QR code for the join page">
-    <div class="qr-url" id="joinUrl"></div>
+  <div class="card">
+    <h2>Business logo</h2>
+    <p class="muted">Shown on the guest join page and the customer ticket. PNG, JPEG, WebP or SVG, max. 2 MB.</p>
+    <div class="logo-row">
+      <img id="logoPreview" class="logo-preview hidden" alt="Logo">
+      <input type="file" id="logoInput" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost small" id="saveLogoBtn">Upload</button>
+      <button class="btn danger small hidden" id="removeLogoBtn">Remove</button>
+    </div>
+    <p class="muted" id="logoMsg"></p>
+  </div>
+
+  <div class="card hidden" id="pinCard">
+    <h2>Staff PIN</h2>
+    <p class="muted">Only the owner login (email + password) can change the business PIN.</p>
+    <label>New PIN (4–8 digits)</label>
+    <div class="settings-row">
+      <input type="password" id="pinNewInput" inputmode="numeric" autocomplete="off">
+      <button class="btn ghost small" id="savePinBtn">Change</button>
+    </div>
+    <p class="muted" id="pinMsg"></p>
+  </div>
+
+  <div class="card hidden" id="notifCard">
+    <h2>Guest notifications</h2>
+    <p class="muted">Guests see a \"You're almost up\" alert (sound + vibration) when this many people are ahead of them. 0 disables it.</p>
+    <label>Almost-up threshold (people ahead)</label>
+    <div class="settings-row">
+      <input type="number" id="notifyAheadInput" min="0" max="20" step="1">
+      <button class="btn ghost small" id="saveNotifyBtn">Save</button>
+    </div>
+    <p class="muted" id="notifyMsg"></p>
+  </div>
+
+  <!-- Inhaber-Bereich -->
+  <div class="card hidden" id="empCard">
+    <h2>Employees</h2>
+    <p class="muted">Each employee gets their own PIN. Their work is tracked in the report below.</p>
+    <div id="empList"></div>
+    <form id="empForm" class="emp-form">
+      <input type="text" id="empName" placeholder="Employee name" maxlength="60">
+      <input type="password" id="empPin" placeholder="PIN (4–8 digits)" inputmode="numeric" autocomplete="off">
+      <button type="submit" class="btn primary small">Add</button>
+    </form>
+    <p class="error" id="empError"></p>
+  </div>
+
+  <div class="card hidden" id="reportCard">
+    <h2>Employee report (today)</h2>
+    <table class="report-table">
+      <thead>
+        <tr><th>Employee</th><th>Called ready</th><th>Picked up</th><th>Avg. min to ready</th></tr>
+      </thead>
+      <tbody id="reportBody"></tbody>
+    </table>
+    <p class="muted" id="reportUnattr"></p>
   </div>
 </div>
 

@@ -1,5 +1,11 @@
 'use strict';
 
+// Slug des Geschaefts aus /b/<slug>/... lesen
+const SLUG = (location.pathname.match(/^\/b\/([^/]+)/) || [])[1];
+if (!SLUG) location.replace('/');
+const TKEY = 'ql_ticket_' + SLUG;
+const BASE = '/api/b/' + encodeURIComponent(SLUG);
+
 async function api(path, options = {}) {
   const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...options });
   const data = await res.json().catch(() => ({}));
@@ -9,20 +15,28 @@ async function api(path, options = {}) {
 
 applyI18n();
 renderLangPicker('langPicker');
+document.getElementById('privacyLink').href = '/b/' + SLUG + '/privacy';
 
 // Lokalname laden
-api('/api/settings').then((d) => { document.getElementById('venueName').textContent = d.venue; }).catch(() => {});
+api(BASE + '/settings').then((d) => {
+  document.getElementById('venueName').textContent = d.venue;
+  if (d.has_logo) {
+    const img = document.getElementById('venueLogo');
+    img.src = BASE + '/logo';
+    img.classList.remove('hidden');
+  }
+}).catch(() => { location.replace('/'); });
 
-// Schon ein aktives Ticket? Direkt weiterleiten.
-const existing = localStorage.getItem('ql_ticket');
+// Schon ein aktives Ticket bei diesem Geschaeft? Direkt weiterleiten.
+const existing = localStorage.getItem(TKEY);
 if (existing) {
-  api('/api/ticket/' + existing).then((d) => {
+  api(BASE + '/ticket/' + existing).then((d) => {
     if (['waiting', 'ready'].includes(d.ticket.status)) {
-      location.replace('/ticket?id=' + existing);
+      location.replace('/b/' + SLUG + '/ticket?id=' + existing);
     } else {
-      localStorage.removeItem('ql_ticket');
+      localStorage.removeItem(TKEY);
     }
-  }).catch(() => localStorage.removeItem('ql_ticket'));
+  }).catch(() => localStorage.removeItem(TKEY));
 }
 
 document.getElementById('joinForm').onsubmit = async (e) => {
@@ -33,15 +47,15 @@ document.getElementById('joinForm').onsubmit = async (e) => {
   btn.disabled = true;
   btn.textContent = t('joining');
   try {
-    const data = await api('/api/join', {
+    const data = await api(BASE + '/join', {
       method: 'POST',
       body: JSON.stringify({
         name: document.getElementById('nameInput').value,
         note: document.getElementById('noteInput').value,
       }),
     });
-    localStorage.setItem('ql_ticket', data.ticket.id);
-    location.href = '/ticket?id=' + data.ticket.id;
+    localStorage.setItem(TKEY, data.ticket.id);
+    location.href = '/b/' + SLUG + '/ticket?id=' + data.ticket.id;
   } catch (ex) {
     err.textContent = ex.message;
     btn.disabled = false;

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QueueUp – Virtual waitlist for your business</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="landing-wrap">
+  <div class="lang-picker" id="langPicker"></div>
+
+  <header class="hero">
+    <div class="logo">QueueUp</div>
+    <h1 data-i18n="landing_title">The virtual waitlist for your business</h1>
+    <p class="sub" data-i18n="landing_sub">Guests join via QR code or link, no app needed.</p>
+    <div class="feat-row">
+      <div class="feat">📱 <span data-i18n="feat_qr">QR code & link</span></div>
+      <div class="feat">📊 <span data-i18n="feat_live">Live dashboard</span></div>
+      <div class="feat">⏱️ <span data-i18n="feat_stats">Daily stats</span></div>
+    </div>
+    <a class="demo-link" id="demoLink" href="/b/demo" data-i18n="demo_link">Try the live demo →</a>
+  </header>
+
+  <!-- Bereits eingeloggt -->
+  <div class="card hidden" id="meCard">
+    <h2><span data-i18n="logged_in_as">Logged in as</span> <span id="meName"></span></h2>
+    <label data-i18n="guest_link">Guest link</label>
+    <div class="settings-row">
+      <input type="text" id="meGuestLink" readonly>
+    </div>
+    <div class="btn-row">
+      <a class="btn primary" id="meDashBtn" href="#" data-i18n="go_dashboard">Open dashboard</a>
+      <button class="btn ghost" id="meLogoutBtn" data-i18n="logout">Log out</button>
+    </div>
+  </div>
+
+  <div class="landing-grid">
+    <!-- Registrierung -->
+    <div class="card">
+      <h2 data-i18n="signup_title">Create your business</h2>
+      <form id="signupForm">
+        <label data-i18n="signup_name">Business name</label>
+        <input type="text" id="suName" required maxlength="80">
+        <label data-i18n="signup_email">Email</label>
+        <input type="email" id="suEmail" required autocomplete="email">
+        <label data-i18n="signup_password">Password</label>
+        <input type="password" id="suPassword" required minlength="6" autocomplete="new-password">
+        <label data-i18n="signup_pin">Staff PIN</label>
+        <input type="password" id="suPin" required inputmode="numeric" pattern="[0-9]{4,8}" autocomplete="off">
+        <p class="error" id="signupError"></p>
+        <button type="submit" class="btn primary full" id="signupBtn" data-i18n="signup_btn">Create business</button>
+      </form>
+    </div>
+
+    <!-- Login -->
+    <div class="card">
+      <h2 data-i18n="login_title">Log in</h2>
+      <form id="loginForm">
+        <label data-i18n="signup_email">Email</label>
+        <input type="email" id="liEmail" required autocomplete="email">
+        <label data-i18n="signup_password">Password</label>
+        <input type="password" id="liPassword" required autocomplete="current-password">
+        <p class="error" id="loginError"></p>
+        <button type="submit" class="btn primary full" id="loginBtn" data-i18n="login_btn">Log in</button>
+      </form>
+    </div>
+  </div>
+</div>
+<script src="/i18n.js"></script>
+<script src="/landing.js"></script>
+</body>
+</html>
