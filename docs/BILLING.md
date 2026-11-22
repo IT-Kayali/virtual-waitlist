@@ -26,7 +26,26 @@ Die Kündigung ist eine ausdrücklich bestätigte, sofortige Kündigung beim Anb
 
 ## Erforderliche Konfiguration
 
-Alle geheimen Werte gehören in sichere Umgebungsvariablen, nicht in GitHub oder ins Browser-JavaScript.
+Der Betreiber kann Schlüssel später selbst unter `/admin`, Tab Webseiten-Inhalte,
+Zahlungseinstellungen, eintragen. Felder sind beim Eingeben maskiert. Gespeicherte
+Werte werden niemals im Klartext zurückgesendet, nur der Status und die letzten
+vier Zeichen. Leere Eingabe lässt den alten Wert unverändert; mit der separaten
+Löschoption wird er entfernt. Modus und HTTPS-Basisadresse sind dort ebenfalls
+pflegbar. Ein Neustart ist nicht nötig. Anbieter-Zugänge dürfen niemals in Git
+oder in den öffentlich ausgelieferten JavaScript-Code.
+
+Die Konfiguration liegt AES-256-GCM-verschlüsselt in `billing_config`. Der
+zufällige 32-Byte-Root-Key liegt separat in `$DATA_DIR/.billing-key` (0600),
+alternativ als `BILLING_CONFIG_KEY` mit 64 Hex-Zeichen. DB und Root-Key müssen
+zusammen gesichert werden. Ein Verlust oder Wechsel des Root-Keys macht
+bestehende Werte unlesbar. Verschlüsselung schützt bei einem isolierten
+DB-Leak, nicht bei Zugriff auf den gesamten Server oder Datenträger. Die App
+benötigt ihre üblichen Zugriffsschutz-/Backupmaßnahmen weiterhin.
+
+Umgebungsvariablen sind ein optionaler Vorbelegungsweg. Explizit im Admin
+hinterlegte Werte haben Vorrang, auch beim Löschen. Keine Klartext-Logs.
+Ein Moduswechsel wird bei offenen Abovorgängen blockiert. Ein Wechsel des
+Anbieter-Kontos muss vorher mit vorhandenen Abos abgeglichen werden.
 
 | Variable | Zweck |
 |---|---|
@@ -45,7 +64,7 @@ Im Admin pro kostenpflichtigem Tarif hinterlegen:
 - `stripe_price_id` (z. B. `price_…`), aktiver EUR-Monatspreis aus Stripe-Testbetrieb.
 - `paypal_plan_id` (`P-…`), aktiver Plan derselben Sandbox-App, Preis und Intervall müssen übereinstimmen.
 
-Schlüssel und IDs müssen zur selben Umgebung gehören. IDs sind keine Passwörter. IDs lassen sich unter `/admin`, Tab Abo-Modelle, pflegen. Status der benötigten Umgebungsvariablen ist unter Webseiten-Inhalte sichtbar, niemals deren Werte.
+Schlüssel und IDs müssen zur selben Umgebung gehören. IDs sind keine Passwörter. IDs lassen sich unter `/admin`, Tab Abo-Modelle, pflegen. Unter Webseiten-Inhalte sind Maskierung und Eingabefelder für die Konfiguration sichtbar, niemals gespeicherte Klartexte.
 
 ## Webhooks
 
@@ -62,7 +81,7 @@ Beide: Ereignis-ID wird dedupliziert, Abo wird beim Anbieter erneut gelesen. So 
 
 ## Datenmodell
 
-`billing_orders` enthält Geschäft/Tarif, Anbieter, Modus, Preis-/Währungssnapshot, Remote-Plan, Checkout-/Abo-Referenz, Status und Zeitstempel. `billing_events` enthält Anbieter/Ereignis-ID zur Deduplizierung. Keine Kartendaten, keine Anbieter-Geheimnisse.
+`billing_orders` enthält Geschäft/Tarif, Anbieter, Modus, Preis-/Währungssnapshot, Remote-Plan, Checkout-/Abo-Referenz, Status und Zeitstempel. `billing_config` enthält ausschließlich verschlüsselte Anbietereinstellungen. `billing_events` enthält Anbieter/Ereignis-ID zur Deduplizierung. Keine Kartendaten, keine Anbieter-Geheimnisse.
 
 Die in v0.4 angelegte Tabelle `subscriptions` wird zur Kompatibilität beibehalten, ist aber nicht die Quelle der aktuellen Zahlungsanbindung. Admin und `/abo` lesen `billing_orders`.
 
@@ -73,7 +92,7 @@ Die in v0.4 angelegte Tabelle `subscriptions` wird zur Kompatibilität beibehalt
 Vor Freigabe:
 
 1. Betreiber-/Firmenangaben und tatsächliche Kontaktadresse ergänzen. Tarife, Steuerbehandlung und Leistungen bestätigen.
-2. Sandbox-Konten und Tarife anlegen, Schlüssel sicher hinterlegen, Webhooks registrieren.
+2. Sandbox-Konten und Tarife anlegen, Schlüssel im Admin sicher hinterlegen, Webhooks registrieren.
 3. Beide Anbieter mit echten Sandbox-Käufern durchspielen: Freigabe, Abbruch, verzögerter Webhook, doppelte Events, Preisabweichung, Erneuerung/Fehler und Kündigung.
 4. Rechtliche Prüfung inkl. Vertrags-/Kündigungsweg und Datenschutz durchführen; Feature-Entitlements und Grenzen verbindlich definieren.
 5. Erst danach Live-Freigabe besprechen und die Codesperre bewusst ändern. Keine automatischen Echtzahlungen aus diesem Stand.

@@ -2,6 +2,8 @@
 
 ## 0.5.0 - 22.11.2026
 
+- Anbieter-Einstellungen direkt im Admin: AES-GCM-verschlüsselt gespeichert,
+  nur Maskierung/letzte Zeichen zurücklesbar, gezieltes Ersetzen/Löschen.
 - Integrierter Bereich `/abo` und Link im Inhaber-Dashboard; Tarifwahl bleibt
   beim Login erhalten. Stripe Hosted Checkout und PayPal-Sandbox-Adapter.
 - Standardmäßig deaktiviert, Live-Verkauf zusätzlich im Code gesperrt.
@@ -17,7 +19,7 @@
 - Queue-/Aufbewahrungsindizes ergänzt und geordneten Prozessstopp beim
   Deploy eingeführt. Moderates Lasttest-Skript mit 10/50/100 parallelen
   Abläufen, 3-Sekunden-Polling und Sicherheits-Abbruchgrenzen.
-- `npm test`: neun automatisierte Anbieter-/HTTP-Tests grün;
+- `npm test`: zehn automatisierte Anbieter-/HTTP-Tests grün;
   bisherige Mandanten-/Migrationsregression ebenfalls grün.
 
 

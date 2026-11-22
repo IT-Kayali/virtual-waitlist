@@ -13,12 +13,15 @@ function verifyStripe(raw, header, secret, now = Date.now()) {
   });
 }
 
-module.exports = function registerBilling({ db, route, send, readBody, fetcher = fetch, env = process.env }) {
-  const mode = env.BILLING_MODE || 'disabled';
-  const origin = (env.PUBLIC_BASE_URL || '').replace(/\/$/, '');
-  const stripeKey = env.STRIPE_SECRET_KEY || '';
-  const stripeSecret = env.STRIPE_WEBHOOK_SECRET || '';
-  const ppBase = mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
+module.exports = function registerBilling({ db, route, send, readBody, configDir, fetcher = fetch, env = process.env }) {
+  const settings = require('./billing-settings')({db,env,configDir});
+  let cfg, mode, origin, stripeKey, stripeSecret, ppBase;
+  function reload() {
+    cfg=settings.all();mode=cfg.BILLING_MODE||'disabled';origin=(cfg.PUBLIC_BASE_URL||'').replace(/\/$/,'');
+    stripeKey=cfg.STRIPE_SECRET_KEY||'';stripeSecret=cfg.STRIPE_WEBHOOK_SECRET||'';
+    ppBase=mode==='live'?'https://api-m.paypal.com':'https://api-m.sandbox.paypal.com';
+  }
+  reload();
   db.exec(`CREATE TABLE IF NOT EXISTS billing_orders (
     id TEXT PRIMARY KEY, business_id INTEGER NOT NULL, plan_id INTEGER NOT NULL,
     provider TEXT NOT NULL, mode TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'creating',
@@ -35,9 +38,9 @@ module.exports = function registerBilling({ db, route, send, readBody, fetcher =
 
   function configured(provider) {
     if (!['test', 'live'].includes(mode) || !/^https:\/\//.test(origin)) return false;
-    if (mode === 'live' && env.BILLING_LIVE_APPROVED !== 'true') return false;
+    if (mode === 'live' && cfg.BILLING_LIVE_APPROVED !== 'true') return false;
     if (provider === 'stripe') return !!stripeSecret && (mode === 'test' ? /^sk_test_/.test(stripeKey) : /^sk_live_/.test(stripeKey));
-    return !!env.PAYPAL_CLIENT_ID && !!env.PAYPAL_CLIENT_SECRET && !!env.PAYPAL_WEBHOOK_ID;
+    return !!cfg.PAYPAL_CLIENT_ID && !!cfg.PAYPAL_CLIENT_SECRET && !!cfg.PAYPAL_WEBHOOK_ID;
   }
   const lastCall = new Map();
   function limited(session, action, ms) {
@@ -72,7 +75,7 @@ module.exports = function registerBilling({ db, route, send, readBody, fetcher =
   async function paypal(path, method = 'GET', body, idem, rawBody) {
     if (!ppToken || Date.now() > ppUntil) {
       const d = await request(ppBase + '/v1/oauth2/token', { method: 'POST', headers: {
-        Authorization: 'Basic ' + Buffer.from(env.PAYPAL_CLIENT_ID + ':' + env.PAYPAL_CLIENT_SECRET).toString('base64'),
+        Authorization: 'Basic ' + Buffer.from(cfg.PAYPAL_CLIENT_ID + ':' + cfg.PAYPAL_CLIENT_SECRET).toString('base64'),
         'Content-Type': 'application/x-www-form-urlencoded',
       }, body: 'grant_type=client_credentials' });
       ppToken = d.access_token; ppUntil = Date.now() + Math.max(0, Number(d.expires_in) - 60) * 1000;
@@ -248,7 +251,7 @@ module.exports = function registerBilling({ db, route, send, readBody, fetcher =
     try {
       // Embed the received event verbatim in the postback payload, do not reserialize it.
       const head = { transmission_id: h['paypal-transmission-id'], transmission_time: h['paypal-transmission-time'],
-        transmission_sig: h['paypal-transmission-sig'], cert_url: h['paypal-cert-url'], auth_algo: h['paypal-auth-algo'], webhook_id: env.PAYPAL_WEBHOOK_ID };
+        transmission_sig: h['paypal-transmission-sig'], cert_url: h['paypal-cert-url'], auth_algo: h['paypal-auth-algo'], webhook_id: cfg.PAYPAL_WEBHOOK_ID };
       const payload = JSON.stringify(head).slice(0, -1) + ',"webhook_event":' + raw.toString('utf8') + '}';
       const check = await paypal('/v1/notifications/verify-webhook-signature', 'POST', null, null, payload);
       if (check.verification_status !== 'SUCCESS' || !event.id) return send(res, 400, { error: 'Signatur ungültig' });
@@ -260,6 +263,20 @@ module.exports = function registerBilling({ db, route, send, readBody, fetcher =
       return send(res, 200, { ok: true });
     } catch { return send(res, 502, { error: 'Anbieterprüfung fehlgeschlagen, Wiederholung erforderlich' }); }
   });
+  route('GET', '/api/admin/billing-settings', async (req,res) => send(res,200,settings.masked()), {admin:true});
+  route('POST', '/api/admin/billing-settings', async (req,res) => {
+    const body=await readBody(req);
+    const open=db.prepare("SELECT count(*) AS c FROM billing_orders WHERE status NOT IN ('cancelled','expired','failed')").get().c;
+    if (open && body.mode && body.mode!==mode) return send(res,409,{error:'Vor einem Moduswechsel alle offenen Abovorgänge beim Anbieter klären.'});
+    try {
+      const result=settings.save(body);reload();ppToken=null;ppUntil=0;
+      return send(res,200,result);
+    } catch { return send(res,400,{error:'Konfiguration ungültig. Modus und HTTPS-Basisadresse prüfen. Nichts im Klartext auslesen.'}); }
+  }, {admin:true});
+  route('GET', '/api/admin/config', async (req,res) => send(res,200,{
+    stripe:{secret_key:!!stripeKey,webhook_secret:!!stripeSecret},
+    paypal:{client_id:!!cfg.PAYPAL_CLIENT_ID,client_secret:!!cfg.PAYPAL_CLIENT_SECRET,webhook_id:!!cfg.PAYPAL_WEBHOOK_ID,env:mode},
+  }), {admin:true});
   route('GET', '/api/admin/billing', async (req, res) => {
     const rows = db.prepare(`SELECT o.*, b.name AS business_name, b.slug FROM billing_orders o
       JOIN businesses b ON b.id=o.business_id ORDER BY o.created_at DESC LIMIT 500`).all();

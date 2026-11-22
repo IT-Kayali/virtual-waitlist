@@ -45,7 +45,7 @@ document.querySelectorAll('.adm-tab').forEach((t) => {
     if (activeTab === 'inquiries') loadInquiries();
     if (activeTab === 'plans') loadPlans();
     if (activeTab === 'subs') loadSubs();
-    if (activeTab === 'content') loadContent();
+    if (activeTab === 'content') { loadContent(); loadBillingSettings(); }
   };
 });
 
@@ -295,7 +295,7 @@ async function loadContent() {
     $('configStatus').innerHTML =
       `Stripe: Secret Key ${c.stripe.secret_key ? '✅' : '❌ fehlt'} · Webhook Secret ${c.stripe.webhook_secret ? '✅' : '❌ fehlt'}<br>` +
       `PayPal (${esc(c.paypal.env)}): Client ID ${c.paypal.client_id ? '✅' : '❌ fehlt'} · Client Secret ${c.paypal.client_secret ? '✅' : '❌ fehlt'} · Webhook-ID ${c.paypal.webhook_id ? '✅' : '❌ fehlt'}<br>` +
-      `<span class="muted" style="font-size:0.85rem">Schlüssel werden als Railway-Umgebungsvariablen hinterlegt. Preis-/Plan-IDs pflegst du direkt am Abo-Modell.</span>`;
+      `<span class="muted" style="font-size:0.85rem">Schlüssel können unten sicher gespeichert werden. Preis-/Plan-IDs pflegst du direkt am Abo-Modell.</span>`;
   } catch { /* nichts */ }
 }
 
@@ -322,3 +322,27 @@ function showDash() {
 
 // Bereits eingeloggt?
 api('/api/admin/overview').then(showDash).catch(() => {});
+
+
+/* Secrets are write-only: never put saved values back into an input. */
+const BILLING_FIELDS = {STRIPE_SECRET_KEY:'Stripe Secret Key',STRIPE_WEBHOOK_SECRET:'Stripe Webhook Secret',PAYPAL_CLIENT_ID:'PayPal Client ID',PAYPAL_CLIENT_SECRET:'PayPal Client Secret',PAYPAL_WEBHOOK_ID:'PayPal Webhook ID'};
+async function loadBillingSettings() {
+  try {
+    const d=await api('/api/admin/billing-settings');
+    $('billingMode').value=d.mode;$('billingOrigin').value=d.public_base_url||location.origin;
+    $('billingSecretFields').innerHTML=Object.entries(BILLING_FIELDS).map(([key,label])=>{
+      const f=d.fields[key];
+      return `<label for="secret_${key}">${esc(label)} <span class="muted">${f.configured?'Gespeichert: ••••'+esc(f.suffix):'Noch nicht hinterlegt'}</span></label><input type="password" id="secret_${key}" autocomplete="new-password" placeholder="Leer lassen = unverändert"><label class="adm-check"><input type="checkbox" id="clear_${key}"> Gespeicherten Wert löschen</label>`;
+    }).join('');
+  } catch(e){$('billingSettingsMessage').textContent=e.message;}
+}
+$('billingSettingsForm').onsubmit=async e=>{
+  e.preventDefault();$('billingSettingsSave').disabled=true;$('billingSettingsMessage').textContent='';
+  const fields={},clear_fields=[];
+  for(const key of Object.keys(BILLING_FIELDS)){fields[key]=$('secret_'+key).value;if($('clear_'+key).checked)clear_fields.push(key);}
+  try {
+    await api('/api/admin/billing-settings',{method:'POST',body:JSON.stringify({fields,clear_fields,mode:$('billingMode').value,public_base_url:$('billingOrigin').value})});
+    await loadBillingSettings();await loadContent();$('billingSettingsMessage').textContent='Gespeichert. Geheimnisse bleiben verborgen. Live-Verkauf ist gesperrt.';
+  }catch(ex){$('billingSettingsMessage').textContent=ex.message;}
+  finally{$('billingSettingsSave').disabled=false;}
+};

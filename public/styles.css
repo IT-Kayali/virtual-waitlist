@@ -264,3 +264,5 @@ a.btn { text-decoration: none; display: inline-block; text-align: center; }
 .adm-check { display: flex; align-items: center; gap: 8px; font-weight: 500; margin: 6px 0 12px; }
 .adm-check input { width: auto; }
 .card.empty { color: var(--muted); text-align: center; }
+
+#billingSettingsForm input[type="url"], #billingSettingsForm select {width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font:inherit;background:white;}

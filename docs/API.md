@@ -163,3 +163,11 @@ vorliegt. Webhooks sind davon ausgenommen und prüfen Anbietersignaturen.
 
 Quelle für echte Abo-Vorgänge ist `billing_orders`, mit Ereignis-Deduplizierung
 in `billing_events`. Einrichtung und Grenzen: [BILLING.md](BILLING.md).
+
+
+Admin-Konfiguration (nur Plattform-Admin):
+- `GET /api/admin/billing-settings`: Modus, HTTPS-Basis und je Feld `configured`/`suffix`, nie Klartext.
+- `POST /api/admin/billing-settings`: `fields` mit den fünf Anbieterfeldern,
+  `clear_fields` zum Löschen, `mode` disabled/test/live, `public_base_url`.
+  Leere Felder ändern gespeicherte Werte nicht. Verschlüsselte Speicherung,
+  sofort wirksam. Moduswechsel bei offenen Vorgängen: 409.

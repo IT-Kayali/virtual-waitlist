@@ -117,6 +117,14 @@
     <div class="card" style="margin-top:16px">
       <h3 style="margin-bottom:8px">Zahlungsanbieter (Status)</h3>
       <div id="configStatus" class="muted">…</div>
+      <form id="billingSettingsForm" class="adm-form" style="margin-top:16px" autocomplete="off">
+        <p class="muted">Geheimnisse werden verschlüsselt gespeichert und nie zurückgelesen. Leer lassen = unverändert. Der Live-Verkauf bleibt bis zur Abnahme gesperrt.</p>
+        <label for="billingMode">Betriebsmodus</label><select id="billingMode"><option value="disabled">Deaktiviert</option><option value="test">Test / Sandbox</option><option value="live">Live (Verkauf weiter gesperrt)</option></select>
+        <label for="billingOrigin">HTTPS-Basisadresse der App</label><input type="url" id="billingOrigin" placeholder="https://ihre-app.example" required>
+        <div id="billingSecretFields"></div>
+        <button class="btn primary" type="submit" id="billingSettingsSave">Zahlungseinstellungen speichern</button>
+        <p id="billingSettingsMessage" role="status"></p>
+      </form>
     </div>
   </div>
 </div>

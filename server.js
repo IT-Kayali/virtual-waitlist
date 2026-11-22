@@ -836,14 +836,6 @@ route('POST', '/api/admin/content', async (req, res) => {
   return send(res, 200, { ok: true });
 }, { admin: true });
 
-// Konfigurationsstatus der Zahlungsanbieter (keine Werte, nur ob gesetzt)
-route('GET', '/api/admin/config', async (req, res) => {
-  return send(res, 200, {
-    stripe: { secret_key: !!process.env.STRIPE_SECRET_KEY, webhook_secret: !!process.env.STRIPE_WEBHOOK_SECRET },
-    paypal: { client_id: !!process.env.PAYPAL_CLIENT_ID, client_secret: !!process.env.PAYPAL_CLIENT_SECRET, webhook_id: !!process.env.PAYPAL_WEBHOOK_ID, env: process.env.BILLING_MODE || 'disabled' },
-  });
-}, { admin: true });
-
 // ---------- Plattform-Admin: Abos ----------
 route('GET', '/api/admin/subscriptions', async (req, res) => {
   const subs = db.prepare(`SELECT s.*, b.name AS business_name, b.slug, p.name AS plan_name
@@ -852,7 +844,7 @@ route('GET', '/api/admin/subscriptions', async (req, res) => {
   return send(res, 200, { subscriptions: subs });
 }, { admin: true });
 
-require('./billing')({ db, route, send, readBody });
+require('./billing')({ db, route, send, readBody, configDir: DATA_DIR });
 
 // ---------- Server ----------
 const MIME = {

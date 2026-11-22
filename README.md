@@ -124,6 +124,9 @@ sofortiger Kündigung. Standardmäßig sind Zahlungen deaktiviert.
 Live-Verkauf ist zusätzlich im Code gesperrt. Die Tarife sind unverbindliche
 Entwürfe, ohne tarifabhängige Feature-Sperrung.
 
+Anbieter-Schlüssel können später direkt im Admin unter Webseiten-Inhalte
+eingetragen werden, verschlüsselt und ohne Klartext-Rücklesung.
+
 Einrichtung, benötigte Schlüssel, Grenzen und ausstehende Sandbox-Abnahme:
 [docs/BILLING.md](docs/BILLING.md). Tests: `npm test`.
 

@@ -26,6 +26,13 @@ test('Full HTTP auth, page routing, inquiries and disabled billing',async()=>{
   assert.equal((await request('/api/admin/billing',{cookie:owner})).status,401);
   const admin=await request('/api/admin/login',{body:{email:'admin@test.invalid',password:'fixture-password'}});
   assert.equal((await request('/api/admin/billing',{cookie:admin.cookie})).status,200);
+  assert.equal((await request('/api/admin/billing-settings',{cookie:owner})).status,401);
+  const saved=await request('/api/admin/billing-settings',{cookie:admin.cookie,body:{mode:'disabled',public_base_url:'https://example.invalid',fields:{STRIPE_SECRET_KEY:'sk_test_http_fixture_1234'}}});
+  assert.equal(saved.status,200);assert.equal(saved.data.fields.STRIPE_SECRET_KEY.suffix,'1234');
+  assert.equal(JSON.stringify(saved.data).includes('sk_test'),false);
+  const masked=await request('/api/admin/billing-settings',{cookie:admin.cookie});assert.equal(masked.data.fields.STRIPE_SECRET_KEY.configured,true);
+  const cleared=await request('/api/admin/billing-settings',{cookie:admin.cookie,body:{clear_fields:['STRIPE_SECRET_KEY']}});assert.equal(cleared.data.fields.STRIPE_SECRET_KEY.configured,false);
+
   assert.equal((await request('/api/public/inquiry',{body:{name:'Tester',email:'test@example.invalid',message:'Testanfrage'}})).status,201);
   r=await request('/api/admin/inquiries',{cookie:admin.cookie});assert.equal(r.data.inquiries.length,1);
   assert.equal((await request('/api/webhooks/stripe',{body:{type:'checkout.session.completed'}})).status,503);
