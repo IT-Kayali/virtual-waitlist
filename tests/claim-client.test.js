@@ -11,7 +11,7 @@ async function harness({qr=true,claimed=false,canSubscribe=true}={}){
  fetch:async(url,options)=>{events.push({type:'request',url,options});let data={};if(url.endsWith('/settings'))data={venue:'Fixture',has_logo:false};if(url.endsWith('/preview'))data={id:12,number:42,venue:'Fixture',claimed};if(url.endsWith('/connect'))data={ticket:{id:12}};return {ok:true,json:async()=>data};}};
  context.window=context;vm.createContext(context);vm.runInContext(fs.readFileSync('public/claim.js','utf8'),context);
  const flush=async()=>{await new Promise(r=>setImmediate(r));await new Promise(r=>setImmediate(r));};await flush();
- return{context,events,el,storage,flush,async enter(){el('numberInput').value='42';el('codeInput').value='ABCD-1234';el('codeInput').oninput();timers.at(-1)();await flush();},submit(){el('claimForm').onsubmit({preventDefault(){}});}};
+ return{context,events,el,storage,flush,async enter(){el('numberInput').value='42';el('numberInput').oninput();timers.at(-1)();await flush();},submit(){el('claimForm').onsubmit({preventDefault(){}});}};
 }
 test('QR shows only its number and never requests permission on page load; confirmation keeps the gesture',async()=>{
  const h=await harness();assert.equal(h.el('numberInput').required,false);assert.equal(h.el('qrNumber').textContent,42);assert.equal(h.events.some(x=>x.type==='permission'),false);
@@ -21,7 +21,7 @@ test('QR shows only its number and never requests permission on page load; confi
  await h.flush();assert.equal(h.storage.get('ql_owner_demo_12'),'1'.repeat(64));assert.equal(h.events.at(-1).url,'/b/demo/ticket?id=12');
  assert.ok(h.events.some(x=>x.url?.endsWith('/push/subscribe')));
 });
-test('Manual receipt fields are checked before enabling a notification gesture',async()=>{
+test('Only the manual collection number are checked before enabling a notification gesture',async()=>{
  const h=await harness({qr:false});assert.equal(h.el('claimBtn').disabled,true);assert.equal(h.events.some(x=>x.url?.endsWith('/preview')),false);
  await h.enter();assert.equal(h.el('claimBtn').disabled,false);assert.equal(h.events.some(x=>x.type==='permission'),false);
  h.submit();await h.flush();assert.equal(h.events.filter(x=>x.type==='permission').length,1);

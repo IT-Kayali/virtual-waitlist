@@ -41,8 +41,8 @@ Eine Browser-Simulation ist hierfür kein Ersatz.
 Für jede Kombination:
 
 1. Personal trägt die Kassennummer ein und druckt den QueueUp-Beleg mit QR,
-   Nummer und Abholcode. Einmal über QR ohne Dateneingabe, mit einem neuen Beleg
-   separat über Nummer plus Code verbinden. Ein zweiter fremder Browser darf
+   und Abholnummer. Einmal über QR ohne Dateneingabe, mit einem neuen Beleg
+   separat nur über die Abholnummer verbinden. Ein zweiter fremder Browser darf
    denselben bereits verbundenen Beleg nicht übernehmen.
    Alle Nutzeraktionen für Ton/Push bewusst ausführen; Permission nie auf
    Seitenaufruf erzwingen. Installationsangebot und iOS-Home-Screen-Reihenfolge prüfen.

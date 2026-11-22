@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {spawn}=require('node:child_process'),{mkdtempSync,rmSync}=require('node:fs'),{DatabaseSync}=require('node:sqlite');
 const os=require('node:os'),path=require('node:path'),crypto=require('node:crypto');
-test('HTTP: staff receipt, QR and code claims, private ownership, push, tenant boundaries and retired join',async()=>{
+test('HTTP: staff receipt, QR and number-only claims, private ownership, push, tenant boundaries and retired join',async()=>{
  const dir=mkdtempSync(path.join(os.tmpdir(),'queueup-counter-http-'));
  const proc=spawn(process.execPath,['server.js'],{cwd:path.join(__dirname,'..'),env:{...process.env,PORT:'4138',DATA_DIR:dir,STAFF_PIN:'146278',PUBLIC_BASE_URL:'https://queueup.test.invalid',BILLING_MODE:'disabled'}});
  let log='';proc.stdout.on('data',x=>log+=x);proc.stderr.on('data',x=>log+=x);
@@ -13,7 +13,7 @@ test('HTTP: staff receipt, QR and code claims, private ownership, push, tenant b
   const manifest=await req('/b/demo/manifest.webmanifest');assert.equal(manifest.status,200);assert.equal(manifest.data.start_url,'/b/demo/');assert.equal(manifest.data.display,'standalone');
   for(const icon of manifest.data.icons)assert.equal((await fetch(base+icon.src)).status,200);
   const sw=await fetch(base+'/sw.js');assert.equal(sw.status,200);assert.equal(sw.headers.get('service-worker-allowed'),'/');
-  const page=await(await fetch(base+'/b/demo')).text();assert.ok(page.includes('claimForm'));assert.equal(page.includes('nameInput'),false);assert.equal(page.includes('noteInput'),false);
+  const page=await(await fetch(base+'/b/demo')).text();assert.ok(page.includes('claimForm'));assert.equal(page.includes('nameInput'),false);assert.equal(page.includes('noteInput'),false);assert.equal(page.includes('codeInput'),false);
   const kiosk=await(await fetch(base+'/b/demo/kiosk')).text();assert.ok(kiosk.includes('addNumber'));assert.equal(kiosk.includes('kioskForm'),false);
   assert.equal((await req('/api/push/config')).data.enabled,true);
   assert.equal((await req('/api/b/demo/join',{body:{name:'No public creation'}})).status,410);
@@ -23,10 +23,10 @@ test('HTTP: staff receipt, QR and code claims, private ownership, push, tenant b
   const created=await req('/api/staff/add',{cookie,body:{number:42,name:'Ignored',note:'Ignored'}});assert.equal(created.status,200);
   const {entry,receipt}=created.data,ticket='/api/b/demo/ticket/'+entry.id;
   assert.equal(entry.number,42);assert.equal(entry.name,'');assert.equal(entry.note,'');assert.equal(entry.has_receipt,true);
-  assert.match(receipt.code,/^[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$/);assert.ok(receipt.qr_svg.startsWith('<svg'));
+  assert.equal(Object.hasOwn(receipt,'code'),false);assert.ok(receipt.qr_svg.startsWith('<svg'));
   assert.equal((await req('/api/staff/add',{cookie,body:{number:42}})).status,400);
   assert.equal((await req('/api/staff/entry/'+entry.id+'/receipt')).status,401);
-  assert.equal((await req('/api/staff/entry/'+entry.id+'/receipt',{cookie})).data.receipt.code,receipt.code);
+  assert.equal((await req('/api/staff/entry/'+entry.id+'/receipt',{cookie})).data.receipt.claim_url,receipt.claim_url);
   assert.equal((await req('/api/staff/qr',{cookie})).data.url,'https://queueup.test.invalid/b/demo/');
   const svg=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><circle r="2"/></svg>').toString('base64');
   assert.equal((await req('/api/staff/logo',{cookie,body:{data:'data:image/svg+xml;base64,'+svg}})).status,200);
@@ -35,16 +35,16 @@ test('HTTP: staff receipt, QR and code claims, private ownership, push, tenant b
   const url=new URL(receipt.claim_url),fragment=new URLSearchParams(url.hash.slice(1));
   assert.equal(url.search,'');assert.equal(url.pathname,'/b/demo/claim');
   const qr={id:Number(fragment.get('id')),key:fragment.get('key')};
-  const manual={number:42,code:receipt.code.toLowerCase()};
+  const manual={number:42};
   assert.equal((await req('/api/b/demo/claim/preview',{body:manual})).data.number,42);
   assert.equal((await req('/api/b/demo/claim/preview',{body:qr})).data.id,entry.id);
-  for(const body of [{number:42},{number:43,code:receipt.code},{...qr,key:'0'.repeat(64)}])assert.equal((await req('/api/b/demo/claim/preview',{body})).status,400);
+  for(const body of [{number:0},{number:43},{number:1.5},{number:1000000000},{number:"42"},{...qr,key:'0'.repeat(64)}])assert.equal((await req('/api/b/demo/claim/preview',{body})).status,400);
   const token='3'.repeat(64),bad='4'.repeat(64);
   const connected=await req('/api/b/demo/claim/connect',{body:{...qr,guest_token:token}});assert.equal(connected.status,200);assert.equal(connected.data.ticket.push_eligible,true);
   assert.equal((await req('/api/b/demo/claim/connect',{body:{...manual,guest_token:token}})).status,200,'same-browser retry must work');
   assert.equal((await req('/api/b/demo/claim/connect',{body:{...manual,guest_token:bad}})).status,400,'receipt cannot move an already-owned ticket');
   assert.equal((await req(ticket,{token:bad})).status,403);assert.equal((await req(ticket,{token})).status,200);
-  const queue=await req('/api/staff/queue',{cookie});assert.equal(JSON.stringify(queue.data).includes(qr.key),false);assert.equal(JSON.stringify(queue.data).includes(receipt.code),false);assert.equal(JSON.stringify(queue.data).includes('counter_nonce'),false);
+  const queue=await req('/api/staff/queue',{cookie});assert.equal(JSON.stringify(queue.data).includes(qr.key),false);assert.equal(JSON.stringify(queue.data).includes('counter_nonce'),false);
   const key=crypto.createECDH('prime256v1');key.generateKeys();
   const subscription={endpoint:'https://fcm.googleapis.com/fcm/send/http-fixture',keys:{p256dh:key.getPublicKey().toString('base64url'),auth:crypto.randomBytes(16).toString('base64url')}};
   assert.equal((await req(ticket+'/push/subscribe',{body:{subscription}})).status,403);
@@ -64,7 +64,7 @@ test('HTTP: staff receipt, QR and code claims, private ownership, push, tenant b
   assert.equal((await req('/api/staff/entry/'+entry.id+'/receipt',{cookie:other.cookie})).status,404);
   assert.equal((await req('/api/b/'+other.data.slug+'/claim/preview',{body:qr})).status,400);
   const second=await req('/api/staff/add',{cookie,body:{number:7}});
-  const secondClaim=await req('/api/b/demo/claim/connect',{body:{number:7,code:second.data.receipt.code,guest_token:bad}});assert.equal(secondClaim.status,200);
+  const secondClaim=await req('/api/b/demo/claim/connect',{body:{number:7,guest_token:bad}});assert.equal(secondClaim.status,200);
   assert.equal((await req('/api/staff/queue',{cookie})).data.waiting[0].number,7);
   const third=await req('/api/staff/add',{cookie,body:{number:5}});assert.equal(third.data.entry.ahead,1);
   assert.deepEqual((await req('/api/staff/queue',{cookie})).data.waiting.map(e=>e.number),[7,5]);

@@ -30,8 +30,8 @@ Der aktuelle Produktivstand steht in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
    - **„Fast dran"-Schwelle** einstellen (Standard: 2).
    - Geschäfts-PIN ändern.
 3. Im Personal-Dashboard die bereits vergebene Kassennummer eingeben. QueueUp
-   erzeugt einen eigenen Abholbeleg mit persönlichem QR, Nummer und Abholcode
-   gleichzeitig. Der allgemeine Kunden-QR öffnet alternativ die Nummer-/Code-
+   erzeugt einen eigenen Abholbeleg mit persönlichem QR und Abholnummer
+   gleichzeitig. Der allgemeine Kunden-QR öffnet alternativ die Nummern-
    Eingabe. Keine POS-/Bondrucker-Integration. Details: [WEB-PUSH.md](docs/WEB-PUSH.md).
 
 ### Für Mitarbeiter
@@ -75,8 +75,8 @@ Registrierung und Login für Geschäfte liegen unter `/anmelden`.
 
 ### Für Gäste
 
-1. Persönlichen QR auf dem Abholbeleg scannen. Ohne QR: Nummer und Abholcode
-   vom selben Beleg auf `/b/<slug>/` eingeben. Kein Name, Konto oder Bestelltext.
+1. Persönlichen QR auf dem Abholbeleg scannen. Ohne QR: nur die Abholnummer
+   vom heutigen Beleg auf `/b/<slug>/` eingeben. Kein Name, Konto oder Bestelltext.
 2. Ein vorbereiteter Knopf bietet sofort die optionale Push-Erlaubnis an.
    Ohne Push geht es ebenfalls weiter. Ein Seitenaufruf allein erzwingt keinen
    nativen Dialog. Installation wird angeboten, soweit der Browser sie erlaubt.
@@ -90,12 +90,16 @@ Registrierung und Login für Geschäfte liegen unter `/anmelden`.
    garantierte Lautstärke sind nicht möglich. Für In-Page-Melodie einmal
    **Ton aktivieren / testen** antippen und das Ticket offen halten.
 6. iPhone/iPad: zuerst ab iOS 16.4 die Home-Screen-App installieren und dort
-   Nummer plus Code eingeben. Bereits an Safari gebundene Tickets werden nicht
+   nur die Abholnummer eingeben. Bereits an Safari gebundene Tickets werden nicht
    automatisch übertragen. Details: [WEB-PUSH.md](docs/WEB-PUSH.md).
 
 Die Kassennummer ist pro Geschäft und UTC-Tag eindeutig; QueueUp erzeugt sie
-nicht mehr selbst. QR und Abholcode verbinden das Ticket einmalig mit einem
-Browser. Die Wartezeit bleibt eine Schätzung aus den Tageswerten, Fallback
+nicht mehr selbst. QR oder die heutige Nummer verbinden das Ticket einmalig mit
+einem Browser. Eine Nummer ist kein geheimer Nachweis: Wer sie kennt oder errät,
+kann vor dem Gast zuerst verbinden. Nach der Zuordnung bleibt der Zugriff an den
+ersten Browser gebunden. Manuelle Nummerneingabe gilt nur für den aktuellen
+UTC-Tag; der persönliche QR bleibt bis zum Ticketende, höchstens 48 Stunden,
+nutzbar. Die Wartezeit bleibt eine Schätzung aus den Tageswerten, Fallback
 fünf Minuten pro Bestellung.
 
 ## Datenschutz (DSGVO)

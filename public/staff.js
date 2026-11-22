@@ -168,7 +168,6 @@ function showReceipt(receipt) {
   $('receiptVenue').textContent=receipt.venue;
   $('receiptNumber').textContent=receipt.number;
   $('receiptNumber').style.setProperty('--digits',String(receipt.number).length);
-  $('receiptCode').textContent=receipt.code;
   $('receiptUrl').textContent=receipt.manual_url;
   $('receiptQr').src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(receipt.qr_svg);
   $('receiptState').textContent=receipt.claimed?'Dieser Beleg ist bereits mit einem Kunden-Browser verbunden.':'Noch nicht mit einem Kunden-Browser verbunden.';

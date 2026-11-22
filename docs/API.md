@@ -30,7 +30,7 @@ an genau ein Geschäft gebunden) · Inhaber (E-Mail + Passwort, `kind=owner`).
 | GET | `/api/b/:slug/settings` | Öffentliche Daten: `{"venue","slug","has_logo"}`. |
 | GET | `/api/b/:slug/logo` | Logo-Datei (404 wenn keins). PNG/JPEG/WebP/SVG. |
 | POST | `/api/b/:slug/join` | Ab v0.7.0 eingestellt, HTTP 410. Neue Tickets erzeugt nur das Personal anhand der Kassennummer. |
-| POST | `/api/b/:slug/claim/preview` | JSON `{id,key}` aus persönlichem QR oder `{number,code}` vom Beleg. Prüft Besitzbeleg, gibt nur id/number/venue/claimed zurück. |
+| POST | `/api/b/:slug/claim/preview` | JSON `{id,key}` aus persönlichem QR oder nur `{number}`. Die Nummer wird im Geschäft für den aktuellen UTC-Tag gesucht und ist kein geheimer Nachweis. Gibt nur id/number/venue/claimed zurück. |
 | POST | `/api/b/:slug/claim/connect` | Derselbe Beleg plus `guest_token` (64 Hexzeichen). Ordnet einmalig dem Browser zu. Derselbe Token darf nach Verbindungsabbruch wiederholen; anderer Browser wird abgewiesen. |
 | GET | `/api/b/:slug/ticket/:id` | Ticket-Status (Polling). Bei mit `guest_token` erstellten Tickets Header `X-Ticket-Token` erforderlich (oder Personal desselben Geschäfts). |
 | POST | `/api/b/:slug/ticket/:id/cancel` | Warteschlange verlassen (`waiting` oder `ready`); Besitznachweis wie beim Lesen. |
@@ -64,9 +64,9 @@ aber keinen API-Fetch-Handler. Mehr: [WEB-PUSH.md](WEB-PUSH.md).
 | POST | `/api/b/:slug/staff/login` | Body: `{"pin"}` – **Geschäfts-PIN oder Mitarbeiter-PIN**. Antwort enthält `kind` (`pin`/`employee`). |
 | POST | `/api/staff/logout` | Session beenden. |
 | GET | `/api/staff/queue` | Live-Warteschlange: `{"venue","slug","kind","employee","has_logo","notify_ahead","waiting":[...],"ready":[...],"stats":{"waiting","ready","served","avg_minutes"}}`. |
-| POST | `/api/staff/add` | Kassennummer erfassen: JSON `{number}` als Integer 1..999999999. Keine Namen/Notizen. Antwort `entry` und persönlicher `receipt` mit QR, Code und URLs. Nummer pro Geschäft/UTC-Tag eindeutig. |
+| POST | `/api/staff/add` | Kassennummer erfassen: JSON `{number}` als Integer 1..999999999. Keine Namen/Notizen. Antwort `entry` und persönlicher `receipt` mit QR, Nummer und URLs, ohne zusätzliches Code-Feld. Nummer pro Geschäft/UTC-Tag eindeutig. |
 | GET | `/api/staff/entry/:id/receipt` | Nur eigenes Geschäft: denselben persönlichen Beleg erneut abrufen. Keine Zuordnungsübertragung. |
-| GET | `/api/staff/qr` | Lokales SVG und URL für den allgemeinen Nummer-/Code-Zugang. Kein persönlicher Besitzlink. |
+| GET | `/api/staff/qr` | Lokales SVG und URL für den allgemeinen Nummern-Zugang. Kein persönlicher Besitzlink. |
 | POST | `/api/staff/entry/:id/status` | Status setzen: `ready` \| `done` \| `waiting` \| `cancelled`. Bei Mitarbeiter-Session werden `ready_by`/`done_by` gesetzt. |
 | POST | `/api/staff/settings` | `{"venue_name"}` (alle Rollen); `{"new_pin"}` und `{"notify_ahead": 0-20}` **nur Inhaber**. |
 | POST | `/api/staff/logo` | Logo hochladen. Body: `{"data":"data:image/png;base64,..."}`, max. 2 MB, PNG/JPEG/WebP/SVG. |
@@ -121,7 +121,7 @@ Seite: `/admin` (deutsch).
 
 - `number` ist die vom Personal eingegebene Kassennummer, je Geschäft/UTC-Tag eindeutig.
 - `ahead` = früher erfasste wartende Tickets; `waiting_total` = alle Wartenden.
-- `has_receipt` signalisiert einen neuen sicheren Beleg, nicht seinen geheimen Wert.
+- `has_receipt` signalisiert einen Counter-Beleg, nicht einen geheimen manuellen Nachweis.
 - `call_version`/`call_seen` betreffen die aktuelle Aufrufbestätigung, keine Abholung.
 - `notify_ahead` = „Fast dran"-Schwelle des Geschäfts.
 - `est_minutes` = `ahead` × tatsächliche Ø-Bedienzeit des Tages (Fallback 5 Min.).
@@ -137,7 +137,7 @@ Seite: `/admin` (deutsch).
 | `/kontakt` | Kontaktformular |
 | `/impressum`, `/datenschutz` | Rechtstext-Entwürfe |
 | `/abo` | Abo-Verwaltung, nur Inhaber dürfen Änderungen ausführen |
-| `/b/<slug>` | Nummer und Abholcode vom Beleg eingeben |
+| `/b/<slug>` | Abholnummer vom heutigen Beleg eingeben |
 | `/b/<slug>/claim#…` | Persönlichen QR zuordnen, danach Fragment entfernen |
 | `/b/<slug>/kiosk` | Personal-Oberfläche mit Anmeldung und Belegerzeugung |
 | `/b/<slug>/ticket?id=…` | Live-Ticket |

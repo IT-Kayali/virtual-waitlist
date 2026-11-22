@@ -503,7 +503,7 @@ route('POST', '/api/staff/logo/remove', async (req, res, _u, _p, _q, session) =>
 }, { staff: true });
 
 // Old public creation is deliberately retired. Staff issue a receipt instead.
-route('POST', '/api/b/:slug/join', async (_req,res) => send(res,410,{error:'Bitte die Nummer und den Abholcode vom Counter-Beleg verwenden oder dessen QR scannen.'}));
+route('POST', '/api/b/:slug/join', async (_req,res) => send(res,410,{error:'Bitte die Abholnummer vom Counter-Beleg verwenden oder dessen QR scannen.'}));
 const claimBudgets=new Map();
 for(const action of ['preview','connect']) route('POST',`/api/b/:slug/claim/${action}`,async(req,res,_u,p)=>{
   const biz=getBusiness(p.slug);

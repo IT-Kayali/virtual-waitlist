@@ -1,6 +1,6 @@
 # Counter-Abholbeleg, PWA und Web Push
 
-Stand: 22.11.2026, Code v0.7.0. Letzter separat bestätigter Produktivstand:
+Stand: 22.11.2026, Code v0.7.1. Letzter separat bestätigter Produktivstand:
 [DEPLOYMENT.md](DEPLOYMENT.md). Der Nutzer hat die echte Android-Zustellung von
 v0.6.0 bestätigt. Die neue Erinnerungsfolge ist noch kein physisch abgenommener
 Android-Alarm. iPhone-Gerätetest und rechtliche Pilotfreigabe bleiben offen.
@@ -15,12 +15,12 @@ Android-Alarm. iPhone-Gerätetest und rechtliche Pilotfreigabe bleiben offen.
    werden numerisch behandelt. Es werden keine Kundennamen oder Bestellnotizen
    abgefragt. Bereits vergebene Nummern nicht nochmals anlegen, sondern
    **QR / Beleg** am vorhandenen Eintrag wählen.
-3. QueueUp erzeugt einen eigenen druckbaren Abholbeleg mit **QR, Nummer und
-   Abholcode gleichzeitig**. Es gibt keine Anbindung an ein POS-System oder
+3. QueueUp erzeugt einen eigenen druckbaren Abholbeleg mit **QR und Abholnummer
+   gleichzeitig**, ohne zusätzlichen Abholcode. Es gibt keine Anbindung an ein POS-System oder
    einen bestimmten Bondrucker. Browser-Druckdialog und Druckerformat prüfen.
 4. Der Kunde scannt den persönlichen QR. Die Seite zeigt seine Nummer, ohne
-   weitere Dateneingabe. Alternativ auf `/b/<slug>/` Nummer plus 8-stelligen
-   Abholcode vom selben Beleg eingeben. Der allgemeine Dashboard-QR öffnet nur
+   weitere Dateneingabe. Alternativ auf `/b/<slug>/` nur die Abholnummer vom
+   heutigen Beleg eingeben. Der allgemeine Dashboard-QR öffnet nur
    diese manuelle Eingabe und vermittelt keinen Ticketbesitz.
 5. Nach Prüfung bietet ein großer Knopf Mitteilungen an. Der vorbereitete
    `PushManager.subscribe`-Aufruf beginnt direkt in diesem Tipp, vor jedem
@@ -29,15 +29,19 @@ Android-Alarm. iPhone-Gerätetest und rechtliche Pilotfreigabe bleiben offen.
 6. Installation wird als Option angeboten. Der echte Browser-Dialog erscheint
    nur bei verfügbarem `beforeinstallprompt` beziehungsweise `navigator.install`.
    Keine Website kann das Angebot erzwingen. Auf iPhone/iPad zuerst ab
-   iOS/iPadOS 16.4 die Home-Screen-App installieren und öffnen, dort Nummer plus
-   Code eingeben. Wer vorher in Safari fortfährt, bindet das Ticket an Safari;
+   iOS/iPadOS 16.4 die Home-Screen-App installieren und öffnen, dort nur die
+   Abholnummer eingeben. Wer vorher in Safari fortfährt, bindet das Ticket an Safari;
    Browser und Home-Screen-App teilen den lokalen Besitznachweis eventuell nicht.
 
-Der gedruckte Code verwendet acht Crockford-Base32-Zeichen, gruppiert 4-4,
-mit 40 Bit abgeleitetem Wert. Bindestrich, Leerzeichen und Groß-/Kleinschreibung
-sind bei Eingabe tolerant. Der QR verwendet einen getrennten 256-Bit-HMAC-Wert.
-Beide sind auf dieselbe zufällige Belegkennung, Ticket-ID und das Geschäft
-gebunden. Höchstens 300 Prüf-/Zuordnungsversuche je Geschäft und Minute.
+Der zusätzliche Abholcode wurde auf ausdrücklichen Nutzerwunsch entfernt.
+Die Nummer ist **kein geheimer Besitznachweis**: Wer eine aktive Nummer kennt
+oder errät, kann sie vor dem Gast zuerst verbinden. Nach der ersten Verbindung
+bleibt der Zugriff an diesen Browser gebunden. Manuell wird ausschließlich die
+eindeutige Nummer des aktuellen UTC-Kalendertags im gewählten Geschäft gesucht,
+nicht die womöglich gleiche Nummer von gestern. Ein persönlicher QR identifiziert
+dagegen das konkrete Ticket bis zu dessen Ende, höchstens 48 Stunden. Sein
+256-Bit-HMAC-Wert und bereits ausgegebene QR bleiben unverändert. Höchstens
+300 Prüf-/Zuordnungsversuche je Geschäft und Minute.
 
 ## Besitznachweis und Bestand
 

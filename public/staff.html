@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>QueueUp – Staff Dashboard</title>
-<link rel="stylesheet" href="/styles.css?v=0.7.0">
-<link rel="stylesheet" href="/counter.css?v=0.7.0">
+<link rel="stylesheet" href="/styles.css?v=0.7.1">
+<link rel="stylesheet" href="/counter.css?v=0.7.1">
 </head>
 <body>
 
@@ -41,7 +41,7 @@
 
   <section class="card staff-add" id="counterCard">
     <h2>Nummer vom Kassensystem</h2>
-    <p class="muted">Nur die vergebene Nummer eingeben. Der Abholbeleg enthält QR und Abholcode gleichzeitig. Keine Kundendaten.</p>
+    <p class="muted">Nur die vergebene Nummer eingeben. Der Abholbeleg enthält QR und Abholnummer gleichzeitig. Keine Kundendaten.</p>
     <form id="addForm">
       <label for="addNumber" class="sr-only">Kassennummer</label>
       <input type="text" id="addNumber" inputmode="numeric" pattern="[0-9]{1,9}" maxlength="9" placeholder="Kassennummer, z. B. 42" autocomplete="off" required>
@@ -56,8 +56,7 @@
     <div class="claim-number" id="receiptNumber" dir="ltr"></div>
     <img id="receiptQr" class="receipt-qr" alt="QR-Code zum Verbinden dieses Tickets">
     <p>Scannen. Mitteilungen erlauben. Fertig.</p>
-    <p class="receipt-or">Oder Nummer und Abholcode eingeben:</p>
-    <div class="receipt-code" id="receiptCode" dir="ltr"></div>
+    <p class="receipt-or">Oder nur deine Abholnummer hier eingeben:</p>
     <div class="receipt-url" id="receiptUrl" dir="ltr"></div>
     <p class="muted receipt-small">Einmalig mit deinem eigenen Browser verbinden. Beleg und QR nicht weitergeben.</p>
     <p id="receiptState" class="muted no-print"></p>
@@ -80,8 +79,8 @@
 
   <div class="card qr-card">
     <h2>Allgemeiner Kunden-Zugang</h2>
-    <p class="muted">Dieser QR öffnet die Eingabe von Nummer und Abholcode. Der persönliche QR steht auf dem jeweiligen Abholbeleg.</p>
-    <img id="qrImg" alt="QR-Code zur Nummern- und Abholcode-Eingabe">
+    <p class="muted">Dieser QR öffnet die Eingabe der Abholnummer. Der persönliche QR steht auf dem jeweiligen Abholbeleg.</p>
+    <img id="qrImg" alt="QR-Code zur Abholnummer-Eingabe">
     <div class="qr-url" id="joinUrl"></div>
   </div>
 
@@ -156,6 +155,6 @@
   </div>
 </div>
 
-<script src="/staff.js?v=0.7.0"></script>
+<script src="/staff.js?v=0.7.1"></script>
 </body>
 </html>

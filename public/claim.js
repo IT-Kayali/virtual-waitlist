@@ -14,7 +14,7 @@
     if(!response.ok) throw Error(data.error||t('claim_failed'));
     return data;
   }
-  function credentials() {return qr||{number:Number($('numberInput').value),code:$('codeInput').value};}
+  function credentials() {return qr||{number:Number($('numberInput').value)};}
   function readPending(id) {
     try {const value=JSON.parse(localStorage.getItem(pendingKey(id))||'null');if(value?.expiresAt>Date.now()&&/^[a-f0-9]{64}$/.test(value.token||''))return value.token;localStorage.removeItem(pendingKey(id));}catch{}
     return null;
@@ -35,7 +35,7 @@
     const current=++revision;
     preview=null;
     const data=credentials();
-    if(!qr&&(!/^[0-9]{1,9}$/.test($('numberInput').value)||$('codeInput').value.replace(/[ -]/g,'').length!==8)) {checking=false;update();return;}
+    if(!qr&&!/^[0-9]{1,9}$/.test($('numberInput').value)) {checking=false;update();return;}
     checking=true;$('claimError').textContent='';update();
     try {
       const result=await api(base+'/claim/preview',data);
@@ -69,9 +69,9 @@
   $('privacyLink').href=`/b/${slug}/privacy`;
   if(qr) {
     $('manualFields').classList.add('hidden');$('qrNumberWrap').classList.remove('hidden');
-    $('numberInput').required=false;$('codeInput').required=false;
+    $('numberInput').required=false;
   }
-  for(const id of ['numberInput','codeInput']) $(id).addEventListener('input',()=>{
+  for(const id of ['numberInput']) $(id).addEventListener('input',()=>{
     ++revision;preview=null;checking=false;clearTimeout(debounce);$('claimError').textContent='';update();debounce=setTimeout(check,350);
   });
   $('claimForm').onsubmit=event=>{event.preventDefault();connect(!!window.QueuePush?.canSubscribe);};
