@@ -1,6 +1,6 @@
 # Deployment und EU-Release-Pfad
 
-Stand: 22.11.2026, Anwendung v0.5.1. Die App läuft als einzelner Node-Prozess
+Stand: 22.11.2026, Anwendung v0.6.0. Die App läuft als einzelner Node-Prozess
 mit SQLite und einem persistenten Volume auf Railway.
 
 ## Aktuelles Setup
@@ -72,7 +72,42 @@ GitHub-Push und Produktiv-Deploy sind getrennte Schritte. Ein reiner
 Dokumentationsabschluss braucht keinen zusätzlichen App-Neustart. Auto-Deploy
 ist hier nicht als Ersatz für diese Regionsprüfung freigegeben.
 
-## Letzter gepruefter Release: v0.5.1
+## Letzter geprüfter Release: v0.6.0
+
+Am 22.11.2026 gegen 19:43 CET war Deployment
+`3977746e-2fcf-4ddf-91a9-ae62f8697cc0` SUCCESS. Workspace-Standard zuvor live
+als EU West / Amsterdam bestätigt; Limited Trial ohne hinterlegte Karte.
+Genau eine EU-West-Replik wurde vor dem Upload gesetzt. Schon das
+INITIALIZING-Manifest enthielt ausschließlich `europe-west4-drams3a` mit
+`numReplicas: 1`. Es gab keine nachträgliche Regionskorrektur.
+
+- Startlogs: v0.6.0, bestehendes Volume, kein Anwendungs-Stacktrace.
+- Live: Startseite, Demo-Settings, Staff-Seite, Manifest, Icons, Worker und
+  Gäste-Datenschutz HTTP 200. API `no-store`, Worker/Manifest `no-cache`.
+- Push-Konfiguration ist aktiviert und liefert nur den öffentlichen Schlüssel.
+- Ein eigenes neues Gastticket wurde im Browser erstellt, Zugriffsschlüssel
+  lokal vorhanden, Service Worker kontrolliert die Seite. Ohne Besitznachweis
+  und ohne Personal-Session liefert dessen Ticket-API HTTP 403.
+- Nur dieses eigene Testticket wurde im Personal-Dashboard auf bereit gesetzt.
+  Bereit-Anzeige und mobiles Layout wurden live geprüft. Anschließend auch
+  aus dem Bereit-Zustand abgemeldet; tatsächlicher Status `cancelled` über
+  die angemeldete Personal-Sitzung bestätigt.
+- Ein altes eigenes Testticket blieb erhalten; seine öffentliche Ansicht
+  zeigte keinen Namen/Notiz und war nicht für Push freigeschaltet.
+- Der Testbrowser lehnte beim ausdrücklichen Push-Versuch die Berechtigung
+  ab. Die Seite zeigte den Blockiert-Hinweis; es entstand kein Abonnement.
+  Daher keine echte APNs-/FCM-Zustellung und kein physischer Handytest belegt.
+- Lokal: 27/27 Tests, npm audit ohne bekannte Schwachstelle am Prüfzeitpunkt.
+
+Die Crash-Mail von 19:38:57 CET verweist auf das ersetzte v0.5.1-Deployment
+`ed97010b-d59f-44ce-a414-86de11aeec34`. Dessen Ende zeigt Container-Stopp und
+npm/SIGTERM, keinen App-Stacktrace. Der neue v0.6.0-Dienst ist SUCCESS.
+Die genaue Railway-Klassifizierung dieses npm-Stopps ist damit nicht bewiesen.
+
+Physische Push-Abnahme, Restore-Test und rechtliche Pilotfreigabe bleiben
+offen. Nicht aus diesem technischen Release eine Zusage für alle Handys ableiten.
+
+## Vorheriger gepruefter Release: v0.5.1
 
 Am 22.11.2026 gegen 19:17 CET war Deployment
 `ed97010b-d59f-44ce-a414-86de11aeec34` auf SUCCESS. Bereits beim Anlegen

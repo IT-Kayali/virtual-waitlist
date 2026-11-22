@@ -1,8 +1,9 @@
 # PWA und Web Push ab v0.6.0
 
-Stand: 22.11.2026. Technische Umsetzung im Code, echte iPhone-/Android-Abnahme
-noch offen. Ob diese Version bereits produktiv läuft, steht in
-[DEPLOYMENT.md](DEPLOYMENT.md), nicht in einer lokalen Testmeldung.
+Stand: 22.11.2026. v0.6.0 wurde in EU West ausgerollt und als SUCCESS sowie
+mit eigenem Gastticket live geprüft. Nachweis und Einschränkungen:
+[DEPLOYMENT.md](DEPLOYMENT.md). Echte iPhone-/Android-Zustellung bleibt offen;
+der Testbrowser verweigerte Push, deshalb kein echter Gateway-Erfolg belegt.
 
 ## Gastablauf
 
