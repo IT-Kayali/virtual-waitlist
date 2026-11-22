@@ -1,7 +1,7 @@
 # Deployment und EU-Release-Pfad
 
-Stand: 22.11.2026, Code v0.7.1. Der unten belegte letzte Produktiv-Release ist
-bis zur gesonderten Live-Bestätigung v0.7.0. Die App läuft als einzelner Node-Prozess
+Stand: 22.11.2026, Anwendung v0.7.1. Der unten belegte Produktiv-Release wurde
+nach EU-only-Upload und Live-Nummern-Test bestätigt. Die App läuft als einzelner Node-Prozess
 mit SQLite und einem persistenten Volume auf Railway.
 
 ## Aktuelles Setup
@@ -73,7 +73,34 @@ GitHub-Push und Produktiv-Deploy sind getrennte Schritte. Ein reiner
 Dokumentationsabschluss braucht keinen zusätzlichen App-Neustart. Auto-Deploy
 ist hier nicht als Ersatz für diese Regionsprüfung freigegeben.
 
-## Letzter geprüfter Release: v0.7.0
+## Letzter geprüfter Release: v0.7.1
+
+Deployment `ce514e23-e286-4f8e-b688-ef3be7059f24`, Upload am 22.11.2026 um
+20:58 CET, Start v0.7.1 um 20:58:36, anschließend SUCCESS. Schon INITIALIZING
+und der spätere Live-Stand enthalten ausschließlich `europe-west4-drams3a`
+mit einer Replik. Workspace-Standard zuvor EU West; Limited Trial ohne Karte
+geprüft. Bestehendes Volume gemountet, keine neue Datenbank-Migration.
+
+Live um 21:00 CET geprüft: eigener Beleg 182 / Nummer 887002 mit QR und Nummer,
+ohne Code; QR-Ziel zeigt richtige Nummer ohne Eingabefelder, Fragment entfernt.
+Separat nur die Nummer auf der Gastseite eingegeben, ohne Mitteilungen verbunden,
+richtiges Ticket geöffnet. Anschließend nur dieses Ticket verlassen und Status
+**cancelled** sowie keinen eigenen aktiven Testeintrag bestätigt. Andere Einträge
+nicht bearbeitet. Unauthentifizierter Ticket-GET 403; Gäste-/Datenschutzseite,
+Manifest, Worker und Settings 200. Formular enthält kein Code-Feld und lädt
+versionierte v0.7.1-Dateien. Beleg und Gastformular visuell geprüft.
+
+36/36 Tests, npm audit ohne bekannte Produktionslücke. Push-Berechtigungs-Geste,
+Besitzbindung, QR-Kompatibilität und heutige statt gestrige Nummern im Test
+geprüft. Kein neuer physischer Handy-Push-, Kamerascan- oder Druckertest.
+
+Die Crash-Mail um 20:58:38 verlinkt den ersetzten v0.7.0-Deploy
+`64808e8e-54c5-4f66-b093-b406781cfb86`, nicht diesen Release. Der Vorgänger ist
+REMOVED, Container-Stopp 20:58:35, npm SIGTERM 20:58:43. Das entspricht dem
+Release-Wechsel. Die interne Railway-Klassifizierung bleibt nicht bewiesen.
+Keine Karte, kein Upgrade und keine Aktivierung von Live-Zahlungen.
+
+## Vorheriger geprüfter Release: v0.7.0
 
 Deployment `64808e8e-54c5-4f66-b093-b406781cfb86`, angelegt am 22.11.2026 um
 20:23:30 CET, danach SUCCESS. Bereits INITIALIZING und der spätere Live-Stand
@@ -242,7 +269,8 @@ Datenbank-Migration und keine Änderung der Erinnerungs-/Tonlogik.
 Vor Release geprüft: 36/36 Tests, npm audit ohne bekannte Produktionslücke,
 reale lokale Chrome-Flows für QR und nur Nummer, Ready/ACK, DE/EN/AR sowie
 neunstellige Nummer. Einseitiger Beleg und mobile Formulare visuell geprüft.
-Produktiv-Upload und Live-Abnahme sind für diesen Abschnitt noch ausstehend.
+Der Produktiv-Upload und die Live-Abnahme sind im v0.7.1-Release-Nachweis oben
+belegt. Physische Geräte- und Pilot-Gates bleiben unverändert offen.
 
 ## Counter-/Alarm-Rollout ab v0.7.0
 
