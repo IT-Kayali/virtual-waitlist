@@ -12,7 +12,6 @@ if (SLUG) {
     .then((d) => {
       if (d.venue) {
         document.getElementById('venueName').textContent = d.venue;
-        document.getElementById('venueName2').textContent = d.venue;
         document.getElementById('backLink').href = '/b/' + SLUG;
       }
     })
