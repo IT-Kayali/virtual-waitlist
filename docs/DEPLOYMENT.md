@@ -1,7 +1,7 @@
 # Deployment und EU-Release-Pfad
 
-Stand: 22.11.2026, Code v0.7.0. Der unten belegte letzte Produktiv-Release bleibt
-bis zur nächsten bestätigten Abnahme v0.6.0. Die App läuft als einzelner Node-Prozess
+Stand: 22.11.2026, Anwendung v0.7.0. Der unten belegte Produktiv-Release wurde
+nach EU-only-Upload und Live-Counter-Test bestätigt. Die App läuft als einzelner Node-Prozess
 mit SQLite und einem persistenten Volume auf Railway.
 
 ## Aktuelles Setup
@@ -73,7 +73,40 @@ GitHub-Push und Produktiv-Deploy sind getrennte Schritte. Ein reiner
 Dokumentationsabschluss braucht keinen zusätzlichen App-Neustart. Auto-Deploy
 ist hier nicht als Ersatz für diese Regionsprüfung freigegeben.
 
-## Letzter geprüfter Release: v0.6.0
+## Letzter geprüfter Release: v0.7.0
+
+Deployment `64808e8e-54c5-4f66-b093-b406781cfb86`, angelegt am 22.11.2026 um
+20:23:30 CET, danach SUCCESS. Bereits INITIALIZING und der spätere Live-Stand
+enthielten nur `europe-west4-drams3a` mit einer Replik. Workspace-Standard vorher
+live EU West / Amsterdam; Limited Trial ohne hinterlegte Zahlungsmethode.
+Bestehendes Volume `/data` wurde gemountet, Startlogs v0.7.0 ohne App-Stacktrace.
+
+- 34/34 Tests auf Node 22.23.5, `npm audit --omit=dev`: keine bekannten Lücken.
+- Lokales Chrome: QR-Ziel ohne Kundenfelder, Nummer/Code-Zuordnung, DE/EN/AR,
+  iOS-Anleitung, neunstellige Nummer und bestätigtes Ready-Ticket. Keine
+  JavaScript-Seitenfehler und keine Drittanbieter-Requests. Einseitigen 80-mm-
+  Test-PDF-Beleg und mobile Layouts als echte Pixel geprüft, kein echter Drucker.
+- Live nur eigenes Ticket 178 / Nummer 887001: Staff-Belegerzeugung mit QR,
+  Nummer und Code; QR-Ziel geöffnet, Fragment entfernt, Browser-Besitzschlüssel
+  lokal gesetzt. Der Testbrowser hat Push erneut verweigert, Blockiert-Zustand
+  ist sichtbar. Daraus folgt kein neuer Gateway-/Handy-Erfolg.
+- Eigenes Ticket über Staff auf bereit gesetzt, grünen Gaststatus geprüft.
+  Tipp bestätigt serverseitig dieselbe Aufrufversion, ohne auf abgeholt zu
+  wechseln. Manuelle Nummer-/Code-Eingabe im selben Browser öffnete dasselbe
+  bereits verbundene Ticket erneut und behielt die Bestätigung.
+- Danach eigenes Ticket verlassen, Zustand **cancelled** über die Staff-
+  Berechtigung bestätigt. Andere Einträge unverändert. Unauthentifizierter
+  Ticket-GET liefert 403. Seiten/Manifest/Worker/Settings 200; API `no-store`.
+- Keine Karte, kein Upgrade, keine Aktivierung von Live-Zahlungen. Physische
+  Android-Erinnerungsfolge, iPhone, echter Druck/Scan, Betreiber-/Rechts- und
+  Restore-Abnahme bleiben getrennte Gates.
+
+Die Crash-Mail um 20:23:54 verweist auf den ersetzten v0.6.0-Deploy
+`3977746e-2fcf-4ddf-91a9-ae62f8697cc0`, nicht auf diesen Release. Dessen Logs
+zeigen Container-Stopp 20:23:52 und npm SIGTERM 20:23:56 beim Wechsel.
+Das belegt das Ablöse-Muster, nicht die interne Ursache der Railway-Einstufung.
+
+## Vorheriger geprüfter Release: v0.6.0
 
 Am 22.11.2026 gegen 19:43 CET war Deployment
 `3977746e-2fcf-4ddf-91a9-ae62f8697cc0` SUCCESS. Workspace-Standard zuvor live
