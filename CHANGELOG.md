@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.5.0 - 22.11.2026
+
+- Integrierter Bereich `/abo` und Link im Inhaber-Dashboard; Tarifwahl bleibt
+  beim Login erhalten. Stripe Hosted Checkout und PayPal-Sandbox-Adapter.
+- Standardmäßig deaktiviert, Live-Verkauf zusätzlich im Code gesperrt.
+  Kein Publishable Key nötig. Konfiguration und noch ausstehende echte
+  Sandbox-Abnahme ausführlich in `docs/BILLING.md` dokumentiert.
+- Signierte Webhooks, Replay-Deduplizierung, erneute Anbieterabfrage,
+  monatlicher Preisabgleich, DB-Duplikatschutz und bestätigte Kündigung.
+- Neue Tabellen `billing_orders` und `billing_events`; Inhaberrechte auf
+  allen Billing-APIs, Rate-Limits für Anbieterabfragen, JSON-/Origin-Prüfung.
+- Unbestätigte Preise als Tarifentwürfe gekennzeichnet, erfundene
+  Kontaktadresse/Supportzusagen und pauschale DSGVO-Werbung entfernt.
+  Impressum und Datenschutz ausdrücklich noch Entwürfe.
+- Queue-/Aufbewahrungsindizes ergänzt und geordneten Prozessstopp beim
+  Deploy eingeführt. Moderates Lasttest-Skript mit 10/50/100 parallelen
+  Abläufen, 3-Sekunden-Polling und Sicherheits-Abbruchgrenzen.
+- `npm test`: neun automatisierte Anbieter-/HTTP-Tests grün;
+  bisherige Mandanten-/Migrationsregression ebenfalls grün.
+
+
 ## 0.4.0 – 22.11.2026
 
 **Professionelle öffentliche Webseite + Anfragen- und Abo-Verwaltung im Admin-Bereich.**

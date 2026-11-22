@@ -97,6 +97,7 @@ function bindActions() {
 function applyKind(kind, employee) {
   sessionKind = kind || sessionKind;
   const isOwner = sessionKind === 'owner';
+  $('billingCard').classList.toggle('hidden', !isOwner);
   $('pinCard').classList.toggle('hidden', !isOwner);
   $('notifCard').classList.toggle('hidden', !isOwner);
   $('empCard').classList.toggle('hidden', !isOwner);

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Preise &amp; Abos – QueueUp</title>
-<meta name="description" content="QueueUp Abo-Modelle: Wählen Sie das passende Paket für Ihr Geschäft. Monatlich kündbar, DSGVO-konform.">
+<meta name="description" content="QueueUp Abo-Modelle: Wählen Sie das passende Paket für Ihr Geschäft. Unverbindliche Vorschau.">
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
@@ -25,11 +25,11 @@
 <main class="site-main">
   <section class="site-section">
     <h2>Abo-Modelle</h2>
-    <p class="section-sub">Transparent und fair: Wählen Sie das Paket, das zu Ihrem Geschäft passt. Alle Preise verstehen sich inkl. MwSt., monatlich kündbar.</p>
+    <p class="section-sub">Unverbindliche Tarifentwürfe zur Vorschau. Preise, Steuerangaben und Leistungsumfang sind noch nicht freigegeben. Kein kostenpflichtiger Abschluss möglich.</p>
     <div class="price-grid" id="planGrid">
       <p class="muted" style="text-align:center">Tarife werden geladen …</p>
     </div>
-    <p class="price-note">Fragen zu den Paketen oder Wunsch nach einer persönlichen Einrichtung? <a href="/kontakt">Kontaktieren Sie uns</a> – wir melden uns innerhalb von 24 Stunden.</p>
+    <p class="price-note">Fragen zu den Paketen oder Wunsch nach einer persönlichen Einrichtung? <a href="/kontakt">Kontaktieren Sie uns</a> – wir bearbeiten Ihre Anfrage im Admin-Bereich.</p>
   </section>
 </main>
 
@@ -62,7 +62,7 @@ function planCard(p) {
     + (p.description ? '<p class="p-desc">' + esc(p.description) + '</p>' : '')
     + '<div class="p-price">' + priceText(p) + interval + '</div>'
     + '<ul>' + feats + '</ul>'
-    + '<a class="btn primary full" href="/anmelden?plan=' + encodeURIComponent(p.slug) + '">Jetzt starten</a>'
+    + '<a class="btn primary full" href="/anmelden?plan=' + encodeURIComponent(p.slug) + '">Tarif ansehen</a>'
     + '</div>';
 }
 siteApi('/api/public/plans').then((d) => {

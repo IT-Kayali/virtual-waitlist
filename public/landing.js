@@ -42,7 +42,8 @@ $('signupForm').onsubmit = async (e) => {
         pin: $('suPin').value,
       }),
     });
-    location.href = '/b/' + d.slug + '/staff';
+    const plan = new URLSearchParams(location.search).get('plan');
+    location.href = plan ? '/abo?plan=' + encodeURIComponent(plan) : '/b/' + d.slug + '/staff';
   } catch (ex) {
     $('signupError').textContent = ex.message;
     btn.disabled = false;
@@ -61,7 +62,8 @@ $('loginForm').onsubmit = async (e) => {
       method: 'POST',
       body: JSON.stringify({ email: $('liEmail').value, password: $('liPassword').value }),
     });
-    location.href = '/b/' + d.slug + '/staff';
+    const plan = new URLSearchParams(location.search).get('plan');
+    location.href = plan ? '/abo?plan=' + encodeURIComponent(plan) : '/b/' + d.slug + '/staff';
   } catch (ex) {
     $('loginError').textContent = ex.message;
     btn.disabled = false;

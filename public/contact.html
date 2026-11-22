@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Kontakt &amp; Anfrage – QueueUp</title>
-<meta name="description" content="Kontakt zu QueueUp: Fragen, Demo-Anfrage oder Beratung für Ihr Geschäft. Wir melden uns innerhalb von 24 Stunden.">
+<meta name="description" content="Kontakt zu QueueUp: Fragen, Demo-Anfrage oder Beratung für Ihr Geschäft. Senden Sie Ihre Anfrage über das Formular.">
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
@@ -25,7 +25,7 @@
 <main class="site-main">
   <section class="site-section">
     <h2>Kontakt &amp; Anfrage</h2>
-    <p class="section-sub">Ob Frage, Demo-Termin oder Beratung für Ihr Geschäft – schreiben Sie uns, wir melden uns innerhalb von 24 Stunden.</p>
+    <p class="section-sub">Ob Frage, Demo-Termin oder Beratung für Ihr Geschäft – schreiben Sie uns, wir bearbeiten Ihre Anfrage im Admin-Bereich.</p>
 
     <div class="form-panel">
       <div class="panel">
@@ -63,11 +63,11 @@
           <p class="privacy-hint">Mit dem Absenden stimmen Sie zu, dass wir Ihre Angaben zur Bearbeitung der Anfrage verwenden. Details in der <a href="/datenschutz">Datenschutzerklärung</a>.</p>
         </form>
         <div class="success-box hidden" id="successBox">
-          <strong>Vielen Dank!</strong> Ihre Nachricht ist eingegangen. Wir melden uns in der Regel innerhalb von 24 Stunden bei Ihnen.
+          <strong>Vielen Dank!</strong> Ihre Nachricht ist eingegangen. Ihre Anfrage kann jetzt vom Betreiber bearbeitet werden.
         </div>
       </div>
       <p style="text-align:center;margin-top:22px;color:var(--muted)">
-        Direkt per E-Mail: <a id="contactMail" href="mailto:kontakt@queueup.app" data-content="contact_email">kontakt@queueup.app</a>
+        Direkt per E-Mail: <a id="contactMail" href="/kontakt" data-content="contact_email">[Kontakt-E-Mail noch nicht hinterlegt]</a>
       </p>
     </div>
   </section>
@@ -116,6 +116,7 @@ document.getElementById('contactForm').onsubmit = async (e) => {
 document.addEventListener('DOMContentLoaded', async () => {
   const c = await loadSiteContent();
   if (c.contact_email) document.getElementById('contactMail').href = 'mailto:' + c.contact_email;
+  else document.getElementById('contactMail').parentElement.classList.add('hidden');
 });
 </script>
 </body>

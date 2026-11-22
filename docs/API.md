@@ -102,7 +102,12 @@ Seite: `/admin` (deutsch).
 
 | Pfad | Inhalt |
 |---|---|
-| `/` | SaaS-Startseite: Registrierung, Inhaber-Login, Demo-Link |
+| `/` | Öffentliche Produkt-Startseite |
+| `/anmelden` | Registrierung und Inhaber-Login |
+| `/preise` | Unverbindliche Tarifentwürfe |
+| `/kontakt` | Kontaktformular |
+| `/impressum`, `/datenschutz` | Rechtstext-Entwürfe |
+| `/abo` | Abo-Verwaltung, nur Inhaber dürfen Änderungen ausführen |
 | `/b/<slug>` | Gäste-Beitritt (Selbstbedienung) |
 | `/b/<slug>/kiosk` | Tresen-Bildschirm (Personal trägt Bestellung ein) |
 | `/b/<slug>/ticket?id=…` | Live-Ticket |
@@ -110,7 +115,7 @@ Seite: `/admin` (deutsch).
 | `/privacy`, `/b/<slug>/privacy` | Datenschutzerklärung |
 | `/admin` | Plattform-Admin (SaaS-Inhaber) |
 | `/ticket?id=…` (alt) | 302-Umleitung auf `/b/<slug>/ticket?id=…` |
-| `/staff` (alt) | 302-Umleitung auf `/` |
+| `/staff` (alt) | 302-Umleitung auf `/anmelden` |
 
 ## Datenmodell (SQLite)
 
@@ -136,3 +141,25 @@ Beim Start erkennt der Server eine alte Single-Tenant-Datenbank
 (`entries` ohne `business_id`) und migriert sie automatisch in ein
 Demo-Geschäft (Slug `demo`, Name aus der alten `settings`-Tabelle, PIN aus
 `STAFF_PIN`). Alte Ticket-Links leiten per 302 um.
+
+
+## Billing ab v0.5.0
+
+| Methode | Pfad | Autorisierung / Zweck |
+|---|---|---|
+| GET | `/api/billing/status` | Inhaber: lokaler Status + Anbieter-Konfiguration, keine Schlüssel |
+| POST | `/api/billing/checkout` | Inhaber: `provider` stripe/paypal, `plan` Slug, nur Testbetrieb; Duplikatschutz |
+| POST | `/api/billing/refresh` | Inhaber: Anbieterstatus erneut prüfen, max. einmal je 10 Sekunden/Geschäft |
+| POST | `/api/billing/cancel` | Inhaber: `id`, `confirm: true`; sofort kündigen, Status beim Anbieter bestätigen |
+| GET | `/api/admin/billing` | Plattform-Admin: Abovorgänge mit Geschäft/Tarif/Status/Modus |
+| POST | `/api/webhooks/stripe` | Stripe-Rohbody und Signatur; keine Browser-Session |
+| POST | `/api/webhooks/paypal` | PayPal-Signatur-Header + Postback-Verifikation; keine Browser-Session |
+
+Fehlende Konfiguration: 503. Fehlende Inhaberrechte: 401/403.
+Checkout-Konflikt: 409. Zeitlimit: 429. Ungeklärte Anbieterantwort: 502,
+Vorgang bleibt gesperrt (`uncertain`), damit keine Doppelbuchung entsteht.
+Browser-Schreibzugriffe benötigen JSON und dieselbe Herkunft, sofern Origin
+vorliegt. Webhooks sind davon ausgenommen und prüfen Anbietersignaturen.
+
+Quelle für echte Abo-Vorgänge ist `billing_orders`, mit Ereignis-Deduplizierung
+in `billing_events`. Einrichtung und Grenzen: [BILLING.md](BILLING.md).

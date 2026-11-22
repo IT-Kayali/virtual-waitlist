@@ -269,7 +269,7 @@ $('npCreate').onclick = async () => {
 /* ---------- Abos ---------- */
 async function loadSubs() {
   try {
-    const d = await api('/api/admin/subscriptions');
+    const d = await api('/api/admin/billing');
     $('subList').innerHTML = d.subscriptions.length
       ? d.subscriptions.map((s) => `<div class="card adm-biz">
           <div class="adm-head"><div>
@@ -293,8 +293,8 @@ async function loadContent() {
   try {
     const c = await api('/api/admin/config');
     $('configStatus').innerHTML =
-      `Stripe: Secret Key ${c.stripe.secret_key ? '✅' : '❌ fehlt'} · Publishable Key ${c.stripe.publishable_key ? '✅' : '❌ fehlt'} · Webhook Secret ${c.stripe.webhook_secret ? '✅' : '❌ fehlt'}<br>` +
-      `PayPal (${esc(c.paypal.env)}): Client ID ${c.paypal.client_id ? '✅' : '❌ fehlt'} · Client Secret ${c.paypal.client_secret ? '✅' : '❌ fehlt'}<br>` +
+      `Stripe: Secret Key ${c.stripe.secret_key ? '✅' : '❌ fehlt'} · Webhook Secret ${c.stripe.webhook_secret ? '✅' : '❌ fehlt'}<br>` +
+      `PayPal (${esc(c.paypal.env)}): Client ID ${c.paypal.client_id ? '✅' : '❌ fehlt'} · Client Secret ${c.paypal.client_secret ? '✅' : '❌ fehlt'} · Webhook-ID ${c.paypal.webhook_id ? '✅' : '❌ fehlt'}<br>` +
       `<span class="muted" style="font-size:0.85rem">Schlüssel werden als Railway-Umgebungsvariablen hinterlegt. Preis-/Plan-IDs pflegst du direkt am Abo-Modell.</span>`;
   } catch { /* nichts */ }
 }

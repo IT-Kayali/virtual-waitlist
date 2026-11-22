@@ -3,7 +3,7 @@
 Die App ist ein einzelner Node-Prozess ohne externe Abhängigkeiten. Sie läuft
 aktuell live auf **Railway** als Multi-Tenant-SaaS.
 
-## Aktuelles Live-Setup (Stand 22.11.2026, v0.2.0)
+## Aktuelles Live-Setup (Stand 22.11.2026, v0.5.0)
 
 | Was | Wert |
 |---|---|
@@ -119,3 +119,19 @@ https://docs.railway.com/deployments/regions
 - **Daten sichern:** SQLite-Datei liegt im Volume unter `/data/queue.db`,
   hochgeladene Logos unter `/data/logos/`; Download über
   `npx railway service files` bzw. Dashboard → Volume.
+
+
+## Abo-System v0.5.0
+
+Standard ohne Keys: `BILLING_MODE=disabled`. Keine Echtzahlungen.
+Alle benötigten Variablen, Anbieter-IDs, Webhook-URLs und Abnahmeschritte
+stehen in [BILLING.md](BILLING.md). Keine Geheimnisse in Git oder Logs
+schreiben. Rechtstexte/Preise sind noch nicht freigegeben.
+
+## Deploy-Verifikation
+
+Nach Upload und EU-Region-Anwendung: Status und Region lesen, Startseite,
+Admin, `/abo`, Demo-Settings und Daten prüfen. Browser-Ansicht auf Desktop
+und Mobil prüfen. Der Prozess behandelt SIGTERM/SIGINT geordnet und schließt
+offene Requests vor SQLite. Bisherige Crash-Meldungen fielen zeitlich mit
+Deploys zusammen; daraus allein ist deren genaue Ursache nicht bewiesen.

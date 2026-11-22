@@ -228,11 +228,11 @@ if (!db.prepare('SELECT id FROM plans LIMIT 1').get()) {
   const ins = db.prepare(`INSERT INTO plans (slug, name, description, price_cents, interval_text, features, highlighted, sort_order)
     VALUES (?,?,?,?,?,?,?,?)`);
   ins.run('starter', 'Starter', 'Zum Ausprobieren und für kleine Betriebe', 0, 'Monat',
-    '1 Warteschlange\nQR-Code & persönlicher Link\nLive-Dashboard\nGäste-Ansicht DE/EN/AR\nDSGVO-konform, Server in der EU', 0, 1);
+    '1 Warteschlange\nQR-Code & persönlicher Link\nLive-Dashboard\nGäste-Ansicht DE/EN/AR\nServer in der EU', 0, 1);
   ins.run('pro', 'Pro', 'Für Cafés und Restaurants im Alltag', 1900, 'Monat',
-    'Alles aus Starter\nMitarbeiter-Konten mit eigenen PINs\nKiosk-Modus für den Tresen\nReports & Mitarbeiter-Statistiken\nEigenes Logo\nPrioritäts-Support', 1, 2);
+    'Alles aus Starter\nMitarbeiter-Konten mit eigenen PINs\nKiosk-Modus für den Tresen\nReports & Mitarbeiter-Statistiken\nEigenes Logo', 1, 2);
   ins.run('business', 'Business', 'Für größere Betriebe und Ketten', 4900, 'Monat',
-    'Alles aus Pro\nMehrere Standorte (in Vorbereitung)\nPersönliche Einrichtung\nTelefon-Support', 0, 3);
+    'Alles aus Pro\nWeitere Leistungen nach Freigabe', 0, 3);
   console.log('Standard-Abo-Modelle angelegt (Starter/Pro/Business).');
 }
 
@@ -241,7 +241,7 @@ if (!db.prepare('SELECT id FROM plans LIMIT 1').get()) {
   const ins = db.prepare('INSERT OR IGNORE INTO site_content (key, value) VALUES (?,?)');
   ins.run('hero_title', 'Schluss mit Warteschlangen vor der Tür.');
   ins.run('hero_sub', 'QueueUp ist die digitale Warteliste für Cafés, Restaurants und Praxen: Ihre Gäste reihen sich per QR-Code oder Link ein – ganz ohne App – und sehen live, wann sie an der Reihe sind.');
-  ins.run('contact_email', 'kontakt@queueup.app');
+  ins.run('contact_email', '');
   ins.run('impressum_name', '');
   ins.run('impressum_street', '');
   ins.run('impressum_city', '');
@@ -250,6 +250,25 @@ if (!db.prepare('SELECT id FROM plans LIMIT 1').get()) {
   ins.run('impressum_verantwortlich', '');
   ins.run('datenschutz_stand', 'November 2026');
 }
+
+// One-time correction of unapproved demo defaults, never overwrite edited customer text.
+if (!db.prepare("SELECT 1 FROM site_content WHERE key='_migration_050'").get()) {
+  db.prepare("UPDATE site_content SET value='' WHERE key='contact_email' AND value='kontakt@queueup.app'").run();
+  const plans = db.prepare('SELECT id, features FROM plans').all();
+  for (const p of plans) {
+    const features = p.features.split('\n').filter(x => !['Prioritäts-Support','Telefon-Support','Persönliche Einrichtung','Mehrere Standorte (in Vorbereitung)'].includes(x))
+      .map(x => x === 'DSGVO-konform, Server in der EU' ? 'Server in der EU' : x).join('\n');
+    if (features !== p.features) db.prepare('UPDATE plans SET features=? WHERE id=?').run(features, p.id);
+  }
+  db.prepare("INSERT INTO site_content(key,value) VALUES ('_migration_050','done')").run();
+}
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS entries_queue_idx ON entries(business_id, day, status, number);
+  CREATE INDEX IF NOT EXISTS entries_retention_idx ON entries(created_at);
+  CREATE INDEX IF NOT EXISTS employees_business_idx ON employees(business_id, active);
+  CREATE INDEX IF NOT EXISTS sessions_business_idx ON sessions(business_id);
+`);
 
 const LOGO_MIME = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml' };
 function logoPath(biz) {
@@ -727,7 +746,7 @@ route('GET', '/api/public/plans', async (req, res) => {
 // Pflegbare Inhalte der Webseite (oeffentlich)
 route('GET', '/api/public/content', async (req, res) => {
   const out = {};
-  for (const r of db.prepare('SELECT key, value FROM site_content').all()) out[r.key] = r.value;
+  for (const r of db.prepare('SELECT key, value FROM site_content').all()) if (!r.key.startsWith('_')) out[r.key] = r.value;
   return send(res, 200, out);
 });
 
@@ -801,7 +820,7 @@ route('POST', '/api/admin/plan/:id', async (req, res, _u, p) => {
 // ---------- Plattform-Admin: Inhalte ----------
 route('GET', '/api/admin/content', async (req, res) => {
   const out = {};
-  for (const r of db.prepare('SELECT key, value FROM site_content').all()) out[r.key] = r.value;
+  for (const r of db.prepare('SELECT key, value FROM site_content').all()) if (!r.key.startsWith('_')) out[r.key] = r.value;
   return send(res, 200, { content: out });
 }, { admin: true });
 
@@ -820,8 +839,8 @@ route('POST', '/api/admin/content', async (req, res) => {
 // Konfigurationsstatus der Zahlungsanbieter (keine Werte, nur ob gesetzt)
 route('GET', '/api/admin/config', async (req, res) => {
   return send(res, 200, {
-    stripe: { secret_key: !!process.env.STRIPE_SECRET_KEY, publishable_key: !!process.env.STRIPE_PUBLISHABLE_KEY, webhook_secret: !!process.env.STRIPE_WEBHOOK_SECRET },
-    paypal: { client_id: !!process.env.PAYPAL_CLIENT_ID, client_secret: !!process.env.PAYPAL_CLIENT_SECRET, env: process.env.PAYPAL_ENV || 'sandbox' },
+    stripe: { secret_key: !!process.env.STRIPE_SECRET_KEY, webhook_secret: !!process.env.STRIPE_WEBHOOK_SECRET },
+    paypal: { client_id: !!process.env.PAYPAL_CLIENT_ID, client_secret: !!process.env.PAYPAL_CLIENT_SECRET, webhook_id: !!process.env.PAYPAL_WEBHOOK_ID, env: process.env.BILLING_MODE || 'disabled' },
   });
 }, { admin: true });
 
@@ -832,6 +851,8 @@ route('GET', '/api/admin/subscriptions', async (req, res) => {
     ORDER BY s.id DESC LIMIT 500`).all();
   return send(res, 200, { subscriptions: subs });
 }, { admin: true });
+
+require('./billing')({ db, route, send, readBody });
 
 // ---------- Server ----------
 const MIME = {
@@ -845,6 +866,14 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
     const pathname = url.pathname;
 
+    // Browser writes must come from this app. Webhooks use provider signatures instead.
+    if (pathname.startsWith('/api/') && req.method !== 'GET' && !pathname.startsWith('/api/webhooks/')) {
+      const expected = process.env.PUBLIC_BASE_URL || `http://${req.headers.host}`;
+      if (req.headers.origin && new URL(req.headers.origin).host !== new URL(expected).host)
+        return send(res, 403, { error: 'Fremde Herkunft nicht erlaubt.' });
+      if (!String(req.headers['content-type'] || '').startsWith('application/json'))
+        return send(res, 415, { error: 'JSON erforderlich.' });
+    }
     if (pathname.startsWith('/api/')) {
       for (const r of routes) {
         const names = [];
@@ -864,7 +893,7 @@ const server = http.createServer(async (req, res) => {
           if (r.staff && !session) {
             return send(res, 401, { error: 'Nicht angemeldet.' });
           }
-          if (r.owner && session.kind !== 'owner') {
+          if (r.owner && (!session || session.kind !== 'owner')) {
             return send(res, 403, { error: 'Nur fuer Inhaber.' });
           }
           return await r.handler(req, res, null, params, url.searchParams, session);
@@ -893,6 +922,7 @@ const server = http.createServer(async (req, res) => {
       '/': '/home.html',
       '/anmelden': '/landing.html',
       '/preise': '/pricing.html',
+      '/abo': '/billing.html',
       '/kontakt': '/contact.html',
       '/impressum': '/impressum.html',
       '/datenschutz': '/datenschutz.html',
@@ -930,3 +960,17 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`QueueUp SaaS laeuft: http://localhost:${PORT}`);
 });
+
+
+// Graceful deployment shutdown: finish in-flight requests before closing SQLite.
+let stopping = false;
+function shutdown(signal) {
+  if (stopping) return;
+  stopping = true;
+  console.log('Geordneter Stopp:', signal);
+  server.close(() => { db.close(); process.exit(0); });
+  server.closeIdleConnections();
+  setTimeout(() => process.exit(1), 10000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Abo &amp; Abrechnung | QueueUp</title><link rel="stylesheet" href="/site.css"></head>
+<body>
+<nav class="site-nav"><div class="site-nav-inner"><a class="site-logo" href="/">Queue<span>Up</span></a><div class="site-nav-links"><a href="/preise">Tarife</a><a id="dashboardLink" href="/anmelden">Mein Geschäft</a><a href="/kontakt">Kontakt</a></div></div></nav>
+<main class="site-main">
+<section class="site-section"><h2>Abo &amp; Abrechnung</h2><p class="section-sub">Verwalten Sie das Abo Ihres Geschäfts direkt in QueueUp.</p>
+<div class="placeholder-note" id="modeNotice">Zahlungen sind noch nicht freigeschaltet. Es wird nichts berechnet.</div>
+<div class="panel hidden" id="accountPanel"><h3 id="accountName"></h3><p id="accountNote"></p><div id="subscriptionInfo" style="margin:16px 0;white-space:pre-wrap"></div><button id="refreshStatus" class="btn ghost">Anbieterstatus prüfen</button> <button id="cancelSubscription" class="btn ghost hidden">Abo sofort kündigen</button><p class="error" id="statusError" role="status"></p></div>
+<div class="panel hidden" id="loginPanel"><h3>Bitte als Geschäftsinhaber anmelden</h3><p>Nur die Anmeldung mit E-Mail und Passwort erlaubt Abo-Änderungen. Eine Personal-PIN reicht nicht aus.</p><a id="loginLink" class="btn primary" href="/anmelden">Anmelden / Konto anlegen</a></div>
+</section>
+<section class="site-section"><h2>Tarif auswählen</h2><p class="section-sub">Tarifentwürfe. Noch keine tarifabhängigen Funktionssperren. Ohne Freigabe und Zahlungsanbieter-Zugangsdaten ist kein Bezahlvorgang möglich.</p><div id="billingPlans" class="price-grid"></div></section>
+<p class="privacy-hint">Bei freigeschaltetem Testbetrieb öffnet sich die sichere Zahlungsseite des gewählten Anbieters. Verwenden Sie dort ausschließlich Testdaten. Eine Rückkehr in die App ist keine Zahlungsbestätigung. Nur der beim Anbieter geprüfte Status zählt.</p>
+</main>
+<footer class="site-footer"><div class="site-footer-inner"><span>QueueUp</span><div><a href="/impressum">Impressum</a><a href="/datenschutz">Datenschutz</a></div></div></footer>
+<script src="/site.js"></script><script src="/billing-client.js"></script>
+</body></html>

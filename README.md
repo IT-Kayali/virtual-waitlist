@@ -104,7 +104,8 @@ tatsächliche durchschnittliche Bedienzeit des Geschäfts an diesem Tag
 
 ```bash
 node server.js
-# Startseite (Registrierung/Login): http://localhost:3000
+# Startseite:                       http://localhost:3000
+# Registrierung/Login:              http://localhost:3000/anmelden
 # Demo-Geschäft:                    http://localhost:3000/b/demo
 # Personal-Dashboard:               http://localhost:3000/b/demo/staff   (PIN: 0000)
 ```
@@ -113,6 +114,18 @@ Voraussetzung: **Node.js 22+**. Beim ersten Start wird automatisch ein
 Demo-Geschäft angelegt (Slug `demo`, PIN aus `STAFF_PIN`). Eine bestehende
 Datenbank aus der Single-Tenant-Version (≤ 0.1.x) wird beim Start automatisch
 in das Demo-Geschäft migriert; alte Links (`/ticket?id=…`) leiten sauber um.
+
+## Abo-Anbindung (v0.5.0)
+
+`/abo` ist der integrierte Abo-Bereich für Geschäftsinhaber. Stripe Hosted
+Checkout und PayPal-Sandbox sind als Adapter vorbereitet, inklusive
+signierter Webhooks, Anbieter-Statusprüfung, Duplikatschutz und bestätigter
+sofortiger Kündigung. Standardmäßig sind Zahlungen deaktiviert.
+Live-Verkauf ist zusätzlich im Code gesperrt. Die Tarife sind unverbindliche
+Entwürfe, ohne tarifabhängige Feature-Sperrung.
+
+Einrichtung, benötigte Schlüssel, Grenzen und ausstehende Sandbox-Abnahme:
+[docs/BILLING.md](docs/BILLING.md). Tests: `npm test`.
 
 ## Umgebungsvariablen
 

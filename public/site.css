@@ -175,3 +175,6 @@ a { color: var(--primary); }
   .site-nav-inner { gap: 12px; }
   .site-nav-links { gap: 12px; }
 }
+
+.btn:disabled { cursor:not-allowed; opacity:0.5; }
+@media(max-width:480px){.site-nav-inner{flex-direction:column;align-items:flex-start}.site-nav-links{margin-left:0;gap:10px; width:100%;font-size:.85rem}.hero{padding-top:45px}.site-main{padding-left:16px;padding-right:16px}.price-grid{grid-template-columns:1fr}}
