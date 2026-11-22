@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QueueUp – Staff Dashboard</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<!-- PIN-Login -->
+<div class="login-wrap" id="loginWrap">
+  <div class="card">
+    <h1>Staff Login</h1>
+    <p class="muted">Enter the staff PIN.</p>
+    <form id="loginForm">
+      <input type="password" id="pinInput" placeholder="PIN" inputmode="numeric" autocomplete="off">
+      <p class="error" id="loginError"></p>
+      <button type="submit" class="btn primary full">Log in</button>
+    </form>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div class="staff-wrap hidden" id="dashWrap">
+  <div class="staff-head">
+    <h1 id="dashVenue">QueueUp</h1>
+    <button class="btn ghost small" id="logoutBtn">Log out</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-num" id="statWaiting">0</div><div class="stat-lbl">Waiting</div></div>
+    <div class="stat-box"><div class="stat-num" id="statReady">0</div><div class="stat-lbl">Ready</div></div>
+    <div class="stat-box"><div class="stat-num" id="statServed">0</div><div class="stat-lbl">Served today</div></div>
+    <div class="stat-box"><div class="stat-num" id="statAvg">–</div><div class="stat-lbl">Avg. min</div></div>
+  </div>
+
+  <div class="queue-section">
+    <h2>Waiting</h2>
+    <div class="queue-list" id="waitingList"></div>
+  </div>
+
+  <div class="queue-section">
+    <h2>Ready for pickup</h2>
+    <div class="queue-list" id="readyList"></div>
+  </div>
+
+  <div class="card staff-add">
+    <h2>Add order manually</h2>
+    <form id="addForm">
+      <input type="text" id="addName" placeholder="Name (optional)">
+      <input type="text" id="addNote" placeholder="Order / note">
+      <button type="submit" class="btn primary">Add</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Settings</h2>
+    <label>Venue name</label>
+    <div class="settings-row">
+      <input type="text" id="venueInput">
+      <button class="btn ghost small" id="saveVenueBtn">Save</button>
+    </div>
+  </div>
+
+  <div class="card qr-card">
+    <h2>Customer QR code</h2>
+    <p class="muted">Print this and place it at the counter. Scanning opens the join page.</p>
+    <img id="qrImg" alt="QR code for the join page">
+    <div class="qr-url" id="joinUrl"></div>
+  </div>
+</div>
+
+<script src="/staff.js"></script>
+</body>
+</html>

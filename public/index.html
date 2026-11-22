@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QueueUp – Join the queue</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="guest-wrap">
+  <div class="lang-picker" id="langPicker"></div>
+  <div class="venue-name" id="venueName">QueueUp</div>
+
+  <div class="card join-card">
+    <h1 data-i18n="join_title">Join the queue</h1>
+    <p class="sub" data-i18n="join_sub">No app, no signup.</p>
+    <form id="joinForm">
+      <label data-i18n="your_name">Your name (optional)</label>
+      <input type="text" id="nameInput" data-i18n-ph="name_ph" autocomplete="name">
+      <label data-i18n="your_note">Order / note (optional)</label>
+      <input type="text" id="noteInput" data-i18n-ph="note_ph">
+      <button type="submit" class="btn primary full" id="joinBtn" data-i18n="join_btn">Join the queue</button>
+      <p class="error" id="joinError"></p>
+    </form>
+  </div>
+</div>
+<script src="/i18n.js"></script>
+<script src="/join.js"></script>
+</body>
+</html>

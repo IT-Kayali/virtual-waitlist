@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QueueUp – Your ticket</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="ticket-wrap" id="wrap">
+  <div class="lang-picker" id="langPicker"></div>
+  <div class="venue-name center" id="venueName">QueueUp</div>
+
+  <div class="card ticket-card">
+    <div class="ticket-label" data-i18n="your_number">Your number</div>
+    <div class="ticket-number" id="ticketNumber">–</div>
+    <div class="ticket-status" id="ticketStatus"></div>
+    <div class="ticket-sub" id="ticketSub"></div>
+
+    <div class="ticket-stats" id="statsRow">
+      <div class="stat-box">
+        <div class="stat-num" id="aheadNum">–</div>
+        <div class="stat-lbl" data-i18n="ahead">Ahead of you</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="estNum">–</div>
+        <div class="stat-lbl"><span data-i18n="est_wait">Est. wait</span> (<span data-i18n="minutes">min</span>)</div>
+      </div>
+    </div>
+
+    <div class="ticket-actions">
+      <button class="btn ghost" id="notifyBtn" data-i18n="notify_btn">🔔 Notify me</button>
+      <button class="btn danger" id="leaveBtn" data-i18n="leave_btn">Leave the queue</button>
+      <p class="ticket-sub" data-i18n="updates_auto">This page updates automatically.</p>
+    </div>
+  </div>
+</div>
+<script src="/i18n.js"></script>
+<script src="/ticket.js"></script>
+</body>
+</html>
