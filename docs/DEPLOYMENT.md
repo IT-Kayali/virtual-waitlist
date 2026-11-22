@@ -1,134 +1,143 @@
-# Deployment
+# Deployment und EU-Release-Pfad
 
-Die App ist ein einzelner Node-Prozess ohne externe Abhängigkeiten. Sie läuft
-aktuell live auf **Railway** als Multi-Tenant-SaaS.
+Stand: 22.11.2026, Anwendung v0.5.0. Die App läuft als einzelner Node-Prozess
+mit SQLite und einem persistenten Volume auf Railway.
 
-## Aktuelles Live-Setup (Stand 22.11.2026, v0.5.0)
+## Aktuelles Setup
 
-| Was | Wert |
+| Teil | Wert |
 |---|---|
-| Anbieter | Railway (railway.com), Workspace „My Projects" |
-| Projekt | `virtual-waitlist` (ID `0e9d31ad-3186-41a7-a51e-1a152ac57d14`) |
-| Service | `virtual-waitlist` (ID `9a34dba5-aeda-46f3-9d4d-4e831f4c28ff`), **Region `europe-west4-drams3a` (EU West, Amsterdam)** |
+| Workspace | My Projects, Limited Trial |
+| Projekt | virtual-waitlist, `0e9d31ad-3186-41a7-a51e-1a152ac57d14` |
+| Produktivdienst | virtual-waitlist, `9a34dba5-aeda-46f3-9d4d-4e831f4c28ff` |
+| Umgebung | production |
+| Laufzeitregion | EU West / Amsterdam, `europe-west4-drams3a`, eine Replik |
 | URL | https://virtual-waitlist-production.up.railway.app |
-| Volume | `virtual-waitlist-volume`, gemountet auf `/data` (SQLite + Logos liegen dort) |
-| Env-Vars | `STAFF_PIN` (PIN des Demo-Geschäfts, Wert im Tresor), `ADMIN_EMAIL` + `ADMIN_PASSWORD` (Plattform-Admin `/admin`, Wert im Tresor), `DATA_DIR=/data`, `PORT` (von Railway) |
-| Konto | Agent-Mail-Konto, Zugangsdaten im Tresor des Besitzers (Eintrag „Railway") |
+| Persistenz | virtual-waitlist-volume, Mount `/data`, SQLite und Logos |
+| Workspace-Standard | EU West / Amsterdam, gespeichert und nach Neuladen geprüft |
 
-**Hosting-Standort (DSGVO):** Die App und ihre Datenbank laufen in der
-Railway-Region **EU West (Amsterdam, Niederlande)**. Die Region wurde am
-22.11.2026 von `iad` (US East) nach EU West verschoben
-(`railway service scale iad=0 eu-west=1`); das Volume wurde dabei von Railway
-in die neue Region migriert (kurzer Downtime während der Migration, Domain
-bleibt unverändert).
+Kosten und Laufzeit werden im Railway-Konto geprüft. Es gibt keine Zusage für
+dauerhaften kostenlosen Weiterbetrieb oder unbegrenzte Volume-Aufbewahrung.
+Vor Karte, Upgrade oder Bezahlplan ist eine neue Freigabe erforderlich.
+Die Billing-Seite zeigte beim Regionstest am 22.11. einen Limited Trial ohne
+hinterlegte Zahlungsmethode. Das ist ein Prüfzeitpunkt, keine ewige Zusage.
 
-**Kosten und Laufzeit:** Der Betrieb nutzt das bestehende Railway-Testkonto.
-Restguthaben, Ablaufdatum und geltende Limits müssen im Railway-Konto geprüft
-werden. Ein dauerhafter kostenloser Weiterbetrieb oder eine unbegrenzte
-Aufbewahrung des Volumes nach Ablauf sind nicht zugesagt. Der Dienst kann
-pausieren. Vor Tarifwechsel oder Hinterlegen einer Zahlmethode ist eine neue
-Freigabe des Besitzers nötig. Regelmäßige eigene Backups sind erforderlich.
+## Vor jedem Produktiv-Deploy
 
-## Update-Ablauf (nach jeder Code-Änderung)
+1. Den richtigen Workspace, das Projekt, die Umgebung und die Service-ID
+   prüfen. Ein lokaler Testkontext darf nie versehentlich Produktion treffen.
+2. Im Workspace unter General die gespeicherte Preferred Deployment Region
+   EU West / Amsterdam prüfen. Diese Vorgabe gilt für neue Dienste.
+3. Die Service-Konfiguration muss **vor** dem Upload ausschließlich eine
+   EU-West-Replik enthalten. Keine US- oder Asien-Replik darf aktiv sein.
+4. CLI-Version und Release-Pfad mit dem unten belegten Test vergleichen.
+   Bei geänderter CLI, geänderter Regionslogik oder widersprüchlicher
+   Konfiguration zuerst wieder mit einem Wegwerf-Dienst und Dummy-Daten
+   prüfen. Bis zum Nachweis bleibt der Produktiv-Deploy gesperrt.
+5. Backup, Tests, aktuelles GitHub-Repo und aktualisierte Doku sicherstellen.
+   Das [Pre-Pilot-Gate](PILOT-CHECKLIST.md) ist vor echten Gästen separat nötig.
 
-Voraussetzung: Railway CLI, eingeloggt mit dem Railway-Konto.
+**Nicht mehr verwenden:** erst `railway up`, danach die Region korrigieren.
+Eine nachträgliche Verschiebung kann einen unerwünschten Zwischenbetrieb
+und bei Volumes eine Migration auslösen. Ebenso keine neue Legacy-Datei
+`railway.json` oder `railway.toml` für diesen Zweck hinzufügen.
 
-```bash
-npm install @railway/cli        # einmalig
-npx railway login               # Browser-Login (Railway-Konto)
-cd virtual-waitlist             # ins Repo-Verzeichnis
-npx railway link                # Projekt „virtual-waitlist" wählen (einmalig)
-npx railway up                  # baut und deployed den aktuellen Stand
-```
+## Geprüfter Ablauf für den bestehenden Dienst
 
-Danach kurz prüfen:
-
-```bash
-curl https://virtual-waitlist-production.up.railway.app/api/b/demo/settings
-```
-
-GitHub und Live-Stand synchron halten:
+Die Befehle setzen eine angemeldete Railway CLI voraus. Getestet wurde
+Version 5.75.0. Vorher die oben genannten Prüfungen durchführen.
 
 ```bash
-git add -A
-git commit -m "Beschreibung der Änderung inkl. Doku-Update"
-git push origin main
-npx railway up
-```
-
-**Optional – Auto-Deploy bei jedem Push:** Im Railway-Dashboard
-(https://railway.com/project/0e9d31ad-3186-41a7-a51e-1a152ac57d14) → Service →
-Settings → Source → „Connect Repo" → GitHub-Repo `IT-Kayali/virtual-waitlist`
-verbinden. Danach deployed Railway automatisch bei jedem Push auf `main`.
-(Dafür muss sich der GitHub-Besitzer einmal bei Railway mit GitHub anmelden.)
-
-## Neu auf Railway deployen (von null)
-
-```bash
-npm install @railway/cli
-npx railway login
 cd virtual-waitlist
-npx railway init --name virtual-waitlist
-npx railway up                                  # erster Deploy
-npx railway variables --set "STAFF_PIN=<6-stellige-PIN>" --set "DATA_DIR=/data"
-npx railway volume add -m /data                 # persistentes Volume für SQLite
-npx railway domain                              # öffentliche URL erzeugen
-# Region EU (DSGVO):
-npx railway scale us-west2=0 eu-west=1
-
-# WICHTIG: `railway up` setzt die Region auf den Standard (us-west2) zurueck.
-# Nach JEDEM `railway up` die Region erneut anwenden:
-#   npx railway scale us-west2=0 eu-west=1
-# (Danach kurz warten und mit `railway status` pruefen: Region muss EU West sein.)
+railway link --project 0e9d31ad-3186-41a7-a51e-1a152ac57d14 --environment production --service 9a34dba5-aeda-46f3-9d4d-4e831f4c28ff --json
+# Link-Ergebnis auf genau diese IDs prüfen, sonst abbrechen.
+railway scale eu-west=1 us-west=0 us-east=0 southeast-asia=0 --json
+# Ergebnis muss ausschließlich eine EU-West-Replik enthalten.
+railway up --detach --json
+railway deployment list --limit 2 --json
 ```
 
-Railway erkennt Node.js automatisch (Nixpacks) und startet mit `npm start`
-(siehe `package.json`). Node-Version kommt aus `engines` (≥ 22).
+In der getesteten CLI wurde `--project` bei einem `scale`-Aufruf fehlerhaft
+als Replikatzuweisung behandelt. Deshalb wird zuerst der genaue lokale
+Kontext verknüpft; `scale` verwendet danach diesen geprüften Kontext.
+Die Ausgabe ist zu prüfen, statt einen fehlgeschlagenen Schritt zu übergehen.
 
-## Regionen
+Bereits das Manifest des neu angelegten Deployments muss ausschließlich
+`europe-west4-drams3a: {numReplicas: 1}` unter `multiRegionConfig` zeigen.
+Danach SUCCESS, tatsächliche Instanz und Region, Logs, Volume-Zuordnung und
+die öffentlichen Seiten/Settings prüfen. Bei einem anderen Regionsziel den
+Rollout stoppen und untersuchen, nicht auf nachträgliches Verschieben bauen.
 
-Verfügbar: `us-west`, `us-east`/`iad`, `eu-west` (Amsterdam),
-`southeast-asia`. Ändern jederzeit möglich, Domain bleibt gleich; mit Volume
-gibt es während der Volume-Migration Downtime. Siehe
-https://docs.railway.com/deployments/regions
+GitHub-Push und Produktiv-Deploy sind getrennte Schritte. Ein reiner
+Dokumentationsabschluss braucht keinen zusätzlichen App-Neustart. Auto-Deploy
+ist hier nicht als Ersatz für diese Regionsprüfung freigegeben.
 
-## Alternativen
+## Nachweis mit einem Wegwerf-Dienst
 
-- **Render:** Free-Tier hat **keine** persistenten Disks – SQLite geht bei
-  jedem Neustart verloren. Nur mit bezahltem Disk (ab 7 $/Monat + 0,25 $/GB)
-  sinnvoll. Start-Kommando `node server.js`, Volume auf `data/` mounten.
-- **Eigener VPS (z. B. Hetzner, ~4 €/Monat, Standort wählbar):** Repo klonen,
-  `STAFF_PIN=... node server.js` (z. B. via systemd oder pm2), Caddy/nginx
-  für HTTPS davor. Daten bleiben auf der lokalen Disk.
-- HTTPS ist wichtig: Browser-Benachrichtigungen und Vibration auf Handys
-  brauchen eine sichere Verbindung.
+Am 22.11.2026 wurde ein neuer leerer Dienst mit reinem Dummy-Code angelegt.
+Er hatte weder Datenbank noch Volume, Produktionsschlüssel oder echte
+Gästedaten und erhielt keine öffentliche Domain.
 
-## Betrieb
+- Workspace-Standard zuerst auf EU West gespeichert und nach Neuladen geprüft.
+- Vor dem ersten Upload EU West = 1 gesetzt, andere Regionen entfernt.
+- Erster Upload: Deployment `977c4a2e-9109-4d51-8e73-449cd760ce35`,
+  EU-only bereits im INITIALIZING-Manifest, später SUCCESS.
+  Der tatsächliche Prozessstart meldete `europe-west4-drams3a`.
+- Zweiter Upload ohne nachträglichen Scale-Schritt: Deployment
+  `f3ec3f90-88de-4e1f-806e-34846fa73168`, erneut EU-only bereits beim Anlegen,
+  später SUCCESS und tatsächlicher Prozessstart in derselben EU-Region.
+- Dummy-Dienst `f76788ef-4c14-41ec-8c7b-92266d51232d` direkt danach gelöscht.
+  Die anschließende Live-Abfrage zeigte nur noch den ursprünglichen Dienst.
+- Produktion wurde dabei nicht neu deployed und blieb auf Deployment
+  `90cf46de-4931-4570-a2d4-b1e5f6c6ec46`, RUNNING in EU West.
 
-- **Plattform-Admin-Zugang ändern:** `npx railway variables --set "ADMIN_EMAIL=..." --set "ADMIN_PASSWORD=..."` (löst Redeploy aus).
+Zusammenfassung der Messdaten: [test-results/eu-region-probe.json](test-results/eu-region-probe.json).
+Der Test nutzte nur vorhandenes Trial-Guthaben. Der einzelne Verbrauch wurde
+nicht separat gemessen. Es gab keine Karte, kein Upgrade und keinen Bezahlplan.
 
-- **Demo-PIN ändern:** `npx railway variables --set "STAFF_PIN=<neue-PIN>"`
-  (löst Redeploy aus). Gilt nur für das Demo-Geschäft; andere Geschäfte
-  verwalten ihre PIN im eigenen Dashboard (Inhaber-Login).
-- **Lokalnamen, Logos, Mitarbeiter, „Fast dran"-Schwelle:** jeweils im
-  Dashboard des Geschäfts unter `/b/<slug>/staff`.
-- **Logs:** `npx railway logs` oder im Dashboard.
-- **Daten sichern:** SQLite-Datei liegt im Volume unter `/data/queue.db`,
-  hochgeladene Logos unter `/data/logos/`; Download über
-  `npx railway service files` bzw. Dashboard → Volume.
+Der Nachweis gilt für diesen getesteten Pfad und Zeitpunkt. Er beweist weder
+die genaue Ursache früherer Regionswechsel noch eine automatische Garantie
+für jede künftige Railway-Version. Insbesondere ist die frühere pauschale
+Aussage, jeder Upload setze immer auf US zurück, nicht belegt. EU-Laufzeit
+allein ist außerdem keine Zusage, dass sämtliche Anbieter-Metadaten,
+Build-Caches, Backups und Unterauftragnehmer ausschließlich in der EU liegen.
 
+## Neue Installation
 
-## Abo-System v0.5.0
+Vor dem ersten Upload Workspace-Standard und einen leeren Dienst auf EU West
+setzen und prüfen. Das Volume für `/data` und die nötige Konfiguration
+vorbereiten. Erst danach Code hochladen. Keine bereits befüllte
+Produktionsdatenbank in einen ungeprüften Dienst kopieren.
 
-Standard ohne Keys: `BILLING_MODE=disabled`. Keine Echtzahlungen.
-Alle benötigten Variablen, Anbieter-IDs, Webhook-URLs und Abnahmeschritte
-stehen in [BILLING.md](BILLING.md). Keine Geheimnisse in Git oder Logs
-schreiben. Rechtstexte/Preise sind noch nicht freigegeben.
+Railway baut die Node-App mit Railpack und startet `npm start`. Benötigt
+werden Node >= 22 sowie `DATA_DIR=/data`, eine eigene Demo-PIN in `STAFF_PIN`
+und die Admin-Zugangsdaten `ADMIN_EMAIL` / `ADMIN_PASSWORD`. Geheimnisse nur
+über geeignete geheime Einstellungen setzen, nie in Git oder Ausgaben.
+Provider-Schlüssel können später verschlüsselt im Admin hinterlegt werden.
 
-## Deploy-Verifikation
+## Betrieb und Abnahme
 
-Nach Upload und EU-Region-Anwendung: Status und Region lesen, Startseite,
-Admin, `/abo`, Demo-Settings und Daten prüfen. Browser-Ansicht auf Desktop
-und Mobil prüfen. Der Prozess behandelt SIGTERM/SIGINT geordnet und schließt
-offene Requests vor SQLite. Bisherige Crash-Meldungen fielen zeitlich mit
-Deploys zusammen; daraus allein ist deren genaue Ursache nicht bewiesen.
+- Änderungen an Umgebungsvariablen können einen Deploy auslösen. Deshalb
+  gilt die Regionsprüfung auch für solche Änderungen.
+- Lokale Namen, Logos, Personal und Vorwarnschwelle werden im jeweiligen
+  Geschäfts-Dashboard unter `/b/<slug>/staff` verwaltet.
+- Backups müssen SQLite, Logos und die zur Entschlüsselung der
+  Anbieter-Konfiguration benötigten Schlüssel sicher berücksichtigen.
+- Billing bleibt ohne Schlüssel deaktiviert und zusätzlich gegen Live-Verkauf
+  gesperrt. Einrichtung und echte Sandbox-Abnahme: [BILLING.md](BILLING.md).
+- Vor echten Gästen: [PILOT-CHECKLIST.md](PILOT-CHECKLIST.md). Rechtstexte,
+  Kontakt und iPhone-/Android-Test gehören in dieselbe Pilotfreigabe.
+- Der begrenzte Lasttest ist in [LOAD-TEST.md](LOAD-TEST.md) dokumentiert.
+  Er ist keine Kapazitäts- oder Dauerbetriebsgarantie.
+
+## Quellen
+
+- https://docs.railway.com/deployments/regions
+- https://docs.railway.com/cli/scale
+- https://docs.railway.com/deployments/scaling
+- https://docs.railway.com/platform/advanced-concepts
+
+Die Regionsdoku verweist teils auf Account Settings, der aktuelle Dialog
+liegt unter Workspace > General. Die Live-Oberfläche wurde deshalb separat
+geprüft. Frühere zeitlich mit Deploys zusammenfallende Crash-Meldungen belegen
+für sich allein ebenfalls keine bestimmte Ursache.

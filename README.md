@@ -142,7 +142,8 @@ Einrichtung, benötigte Schlüssel, Grenzen und ausstehende Sandbox-Abnahme:
 
 ## Dokumentation
 
-- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) – Live-Setup auf Railway, Update-Ablauf, Hosting-Standort
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) – Live-Setup und belegter EU-Release-Pfad
+- [docs/PILOT-CHECKLIST.md](docs/PILOT-CHECKLIST.md) – offenes Gate vor echten Gästen: Betreiberangaben und Handy-Benachrichtigungen
 - [docs/API.md](docs/API.md) – REST-API-Referenz
 - [docs/BILLING.md](docs/BILLING.md) – Abo-Zahlungen und Anbieter-Einrichtung
 - [docs/LOAD-TEST.md](docs/LOAD-TEST.md) – gemessener Lasttest mit 10/50/100 parallelen Abläufen
@@ -178,8 +179,10 @@ public/styles.css
 docs/                 Deployment- und API-Dokumentation
 ```
 
-## Arbeitsregel (stehend)
+## Versionspflege und Releases
 
-Jede Änderung wird **gemeinsam mit der aktualisierten Doku** in denselben
-Commit gepusht und danach live ausgerollt. Das Repo ist damit jederzeit
-direkt deploybar.
+Codeänderungen werden zusammen mit der aktualisierten Doku in denselben
+Commit gepusht. Produktiv-Releases erfolgen ausschließlich über den geprüften
+EU-Pfad aus [DEPLOYMENT.md](docs/DEPLOYMENT.md). Reine Doku-Updates benötigen
+keinen zusätzlichen App-Neustart. Vor dem ersten echten Gastbetrieb gilt
+zusätzlich das [Pre-Pilot-Gate](docs/PILOT-CHECKLIST.md).

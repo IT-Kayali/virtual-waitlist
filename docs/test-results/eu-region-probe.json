@@ -1,0 +1,66 @@
+{
+  "checked_on": "2026-11-22",
+  "cli_version": "5.75.0",
+  "workspace_default_after_saved_reload": "EU West (Amsterdam, Netherlands)",
+  "billing_before_test": "Limited Trial, no payment method on file",
+  "dummy_service_id": "f76788ef-4c14-41ec-8c7b-92266d51232d",
+  "dummy_service_name": "queueup-eu-probe-20261122",
+  "dummy_has_volume": false,
+  "dummy_has_production_data": false,
+  "dummy_has_public_domain": false,
+  "regions_set_before_first_upload": {
+    "europe-west4-drams3a": {
+      "numReplicas": 1
+    }
+  },
+  "scale_after_upload": false,
+  "deployments": [
+    {
+      "deployment_id": "977c4a2e-9109-4d51-8e73-449cd760ce35",
+      "created_at": "2026-11-22T13:16:59.517Z",
+      "initial_status": "INITIALIZING",
+      "initial_regions": {
+        "europe-west4-drams3a": {
+          "numReplicas": 1
+        }
+      },
+      "verified_status": "SUCCESS",
+      "verified_regions": {
+        "europe-west4-drams3a": {
+          "numReplicas": 1
+        }
+      },
+      "runtime_region_observed_in_start_log": "europe-west4-drams3a",
+      "dummy_marker": "eu-probe-v1"
+    },
+    {
+      "deployment_id": "f3ec3f90-88de-4e1f-806e-34846fa73168",
+      "created_at": "2026-11-22T13:17:53.249Z",
+      "initial_status": "INITIALIZING",
+      "initial_regions": {
+        "europe-west4-drams3a": {
+          "numReplicas": 1
+        }
+      },
+      "verified_status": "SUCCESS",
+      "verified_regions": {
+        "europe-west4-drams3a": {
+          "numReplicas": 1
+        }
+      },
+      "runtime_region_observed_in_start_log": "europe-west4-drams3a",
+      "dummy_marker": "eu-probe-v2"
+    }
+  ],
+  "dummy_deleted_and_absence_verified": true,
+  "remaining_services_after_cleanup": [
+    {
+      "id": "9a34dba5-aeda-46f3-9d4d-4e831f4c28ff",
+      "name": "virtual-waitlist"
+    }
+  ],
+  "production_redeployed": false,
+  "production_deployment_unchanged": "90cf46de-4931-4570-a2d4-b1e5f6c6ec46",
+  "individual_trial_credit_consumption": "not measured separately",
+  "scope": "Runtime region and release path only; not a guarantee for all provider data processing or future versions."
+}

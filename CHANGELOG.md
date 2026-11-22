@@ -2,6 +2,14 @@
 
 ## 0.5.0 - 22.11.2026
 
+- EU-Release-Pfad mit zwei Dummy-Uploads belegt: Workspace-Standard EU West,
+  explizite EU-Replikate vor Upload, EU-only bereits im initialen Manifest
+  und im tatsächlichen Prozessstart. Dummy anschließend gelöscht; kein
+  Produktiv-Deploy. Die alte Anleitung up-dann-scale wurde ersetzt.
+- Offenes Pre-Pilot-Gate dokumentiert: echte Betreiber-/Kontaktdaten und
+  iPhone-/Android-Tests im Vordergrund sowie bei gesperrtem Gerät gemeinsam
+  vor dem ersten echten Gastbetrieb prüfen. Keine Sperrbildschirmzusage.
+
 - Live-Lasttest abgeschlossen: 960 Requests bei 10/50/100 parallelen
   Abläufen, null Fehler, p95 324/549/619 ms. Umfang und Grenzen sowie
   Rohdaten in `docs/LOAD-TEST.md` und `docs/test-results/load-test.json`.
@@ -74,7 +82,7 @@
 - Getestet: Login (falsch/richtig/unkonfiguriert), Auth-Zwang, Sperren
   (Kunde + Personal blockiert), Entsperren (alles wieder da).
 
-Betriebshinweis: Bei früheren Uploads wurde ein Rückfall auf us-west2 beobachtet; nach jedem Deploy `railway scale us-west2=0 eu-west=1` erneut anwenden (in DEPLOYMENT.md dokumentiert).
+Historischer Betriebshinweis: Frühere Uploads gingen mit einem Rückfall auf us-west2 einher. Die damalige Empfehlung, die Region erst nach dem Upload zu korrigieren, ist überholt. Der unter 0.5.0 geprüfte EU-Pfad in DEPLOYMENT.md ersetzt sie.
 
 ## 0.2.0 – 22.11.2026
 
