@@ -227,20 +227,20 @@ if (!db.prepare("SELECT 1 FROM pragma_table_info('businesses') WHERE name='activ
 if (!db.prepare('SELECT id FROM plans LIMIT 1').get()) {
   const ins = db.prepare(`INSERT INTO plans (slug, name, description, price_cents, interval_text, features, highlighted, sort_order)
     VALUES (?,?,?,?,?,?,?,?)`);
-  ins.run('starter', 'Starter', 'Zum Ausprobieren und fuer kleine Betriebe', 0, 'Monat',
-    '1 Warteschlange\nQR-Code & persoenlicher Link\nLive-Dashboard\nGaeste-Ansicht DE/EN/AR\nDSGVO-konform, Server in der EU', 0, 1);
-  ins.run('pro', 'Pro', 'Fuer Cafes und Restaurants im Alltag', 1900, 'Monat',
-    'Alles aus Starter\nMitarbeiter-Konten mit eigenen PINs\nKiosk-Modus fuer den Tresen\nReports & Mitarbeiter-Statistiken\nEigenes Logo\nPrioritaets-Support', 1, 2);
-  ins.run('business', 'Business', 'Fuer groessere Betriebe und Ketten', 4900, 'Monat',
-    'Alles aus Pro\nMehrere Standorte (in Vorbereitung)\nPersoenliche Einrichtung\nTelefon-Support', 0, 3);
+  ins.run('starter', 'Starter', 'Zum Ausprobieren und für kleine Betriebe', 0, 'Monat',
+    '1 Warteschlange\nQR-Code & persönlicher Link\nLive-Dashboard\nGäste-Ansicht DE/EN/AR\nDSGVO-konform, Server in der EU', 0, 1);
+  ins.run('pro', 'Pro', 'Für Cafés und Restaurants im Alltag', 1900, 'Monat',
+    'Alles aus Starter\nMitarbeiter-Konten mit eigenen PINs\nKiosk-Modus für den Tresen\nReports & Mitarbeiter-Statistiken\nEigenes Logo\nPrioritäts-Support', 1, 2);
+  ins.run('business', 'Business', 'Für größere Betriebe und Ketten', 4900, 'Monat',
+    'Alles aus Pro\nMehrere Standorte (in Vorbereitung)\nPersönliche Einrichtung\nTelefon-Support', 0, 3);
   console.log('Standard-Abo-Modelle angelegt (Starter/Pro/Business).');
 }
 
 // Standard-Inhalte der oeffentlichen Webseite (vom Plattform-Admin aenderbar)
 {
   const ins = db.prepare('INSERT OR IGNORE INTO site_content (key, value) VALUES (?,?)');
-  ins.run('hero_title', 'Schluss mit Warteschlangen vor der Tuer.');
-  ins.run('hero_sub', 'QueueUp ist die digitale Warteliste fuer Cafes, Restaurants und Praxen: Ihre Gaeste reihen sich per QR-Code oder Link ein - ganz ohne App - und sehen live, wann sie an der Reihe sind.');
+  ins.run('hero_title', 'Schluss mit Warteschlangen vor der Tür.');
+  ins.run('hero_sub', 'QueueUp ist die digitale Warteliste für Cafés, Restaurants und Praxen: Ihre Gäste reihen sich per QR-Code oder Link ein – ganz ohne App – und sehen live, wann sie an der Reihe sind.');
   ins.run('contact_email', 'kontakt@queueup.app');
   ins.run('impressum_name', '');
   ins.run('impressum_street', '');
