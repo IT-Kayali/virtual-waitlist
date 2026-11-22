@@ -2,6 +2,9 @@
 
 ## 0.5.1 - 22.11.2026
 
+- Bei der Live-Sichtprüfung einen älteren Weiß-auf-Hellgrün-Konflikt im
+  Bereit-Zustand behoben; Ton-Testbutton deutlich hervorgehoben.
+
 - Ticket-Alarm auch bei bereits bereitem Ticket auf erster Seitenladung.
 - Ein wiederverwendbarer Audiokontext wird über einen bewussten Tippen-
   und Testschritt aktiviert, statt im Polling neue Kontexte anzulegen.

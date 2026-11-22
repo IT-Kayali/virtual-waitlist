@@ -90,23 +90,12 @@ button { cursor: pointer; font-family: inherit; }
 .pulse { animation: pulse 1.6s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
 
-/* Ready-Zustand: voller grüner Screen */
-.ticket-wrap.is-ready { background: var(--ready); }
-.ticket-wrap.is-ready .card,
-.ticket-wrap.is-ready .ticket-card { background: transparent; border: none; color: #fff; }
+/* Ready-Zustand: heller Hintergrund mit gut lesbarem dunklem Text. */
+.ticket-wrap.is-ready .ticket-card { background: var(--card); color: var(--text); }
 .ticket-wrap.is-ready .ticket-number,
 .ticket-wrap.is-ready .ticket-status,
-.ticket-wrap.is-ready .ticket-sub,
-.ticket-wrap.is-ready .ticket-label,
-.ticket-wrap.is-ready .venue-name { color: #fff; }
-.ticket-wrap.is-ready .stat-box { background: rgba(255,255,255,0.18); }
-.ticket-wrap.is-ready .stat-lbl { color: rgba(255,255,255,0.85); }
+.ticket-wrap.is-ready .venue-name { color: #14532d; }
 .ready-banner { font-size: 2rem; font-weight: 900; margin-top: 10px; }
-.ticket-wrap.is-ready .btn.ghost,
-.ticket-wrap.is-ready .btn.danger {
-  color: #fff; border-color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.12);
-}
-.ticket-wrap.is-ready .ticket-actions .ticket-sub { color: rgba(255,255,255,0.9); }
 
 /* ---------- Mitarbeiter ---------- */
 .staff-wrap { max-width: 860px; margin: 0 auto; padding: 16px; }
@@ -266,3 +255,7 @@ a.btn { text-decoration: none; display: inline-block; text-align: center; }
 .card.empty { color: var(--muted); text-align: center; }
 
 #billingSettingsForm input[type="url"], #billingSettingsForm select {width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font:inherit;background:white;}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash-ready, .pulse { animation: none; }
+}
