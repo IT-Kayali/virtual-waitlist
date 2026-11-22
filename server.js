@@ -6,7 +6,7 @@
  * mit individuellen PINs, Mitarbeiter-Reports und Inhaber-Bereich.
  * Daten sind strikt pro Geschaeft (business_id) getrennt.
  *
- * Zero Dependencies: Node.js >= 22 (HTTP-Server + eingebautes SQLite).
+ * Node.js mit eingebautem SQLite; Web Push ueber web-push.
  */
 
 const http = require('http');
@@ -358,7 +358,7 @@ function ticketView(e, biz) {
       .get(e.business_id, e.day).c,
     notify_ahead: biz.notify_ahead,
     est_minutes: e.status === 'waiting' ? Math.max(1, Math.round(ahead * avgServiceMinutes(e.business_id, e.day))) : 0,
-    venue: biz.name, slug: biz.slug,
+    venue: biz.name, slug: biz.slug, push_eligible: !!e.guest_token_hash,
   };
 }
 function queueStats(bizId, day) {
@@ -366,11 +366,40 @@ function queueStats(bizId, day) {
   return { waiting: g('waiting'), ready: g('ready'), served: g('done'), avg_minutes: avgServiceMinutes(bizId, day) };
 }
 
+// ---------- Web Push (ausdruecklicher Gast-Opt-in) ----------
+const pushSubject = process.env.PUBLIC_BASE_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '');
+const pushEnabled = /^https:\/\/[^/]+\/?$/.test(pushSubject);
+const push = require('./push')({db, configDir: DATA_DIR, subject: pushSubject || 'https://localhost'});
+const {hash: pushHash, validToken: validGuestToken} = require('./push');
+function guestAllowed(req, entry) {
+  if (!entry.guest_token_hash) return true; // Bereits bestehende Tickets bleiben nutzbar.
+  const session = currentSession(req);
+  return session?.business_id === entry.business_id || push.authorized(entry, req.headers['x-ticket-token']);
+}
+
 // ---------- API ----------
 const routes = [];
 function route(method, pattern, handler, opts = {}) {
   routes.push({ method, pattern, handler, staff: !!opts.staff, owner: !!opts.owner, admin: !!opts.admin });
 }
+
+route('GET', '/api/push/config', async (_req, res) => {
+  send(res, 200, {enabled: pushEnabled, publicKey: push.publicKey});
+});
+for (const action of ['subscribe','unsubscribe','status']) route('POST', `/api/b/:slug/ticket/:id/push/${action}`, async (req, res, _u, p) => {
+  const {e} = ticketForGuest(p.slug, p.id);
+  if (!e) return send(res, 404, {error:'Ticket nicht gefunden.'});
+  if (!push.authorized(e, req.headers['x-ticket-token'])) return send(res, 403, {error:'Push nur auf dem Geraet, auf dem dieses Ticket erstellt wurde. Fuer alte Tickets ist ein neuer Besuch erforderlich.'});
+  const body = await readBody(req, 12000);
+  if (action === 'subscribe') {
+    if (!pushEnabled) return send(res, 503, {error:'Push ist auf diesem Server nicht konfiguriert.'});
+    try {push.subscribe(e, body.subscription, body.lang);} catch (error) {return send(res, 400, {error:error.message});}
+    return send(res, 200, {ok:true, subscribed:true});
+  }
+  if (typeof body.endpoint !== 'string' || body.endpoint.length>4096) return send(res, 400, {error:'Push-Endpunkt erforderlich.'});
+  if (action === 'unsubscribe') push.unsubscribe(e, body.endpoint);
+  send(res, 200, {ok:true, subscribed:push.subscribed(e, body.endpoint)});
+});
 
 // Geschaeft registrieren
 route('POST', '/api/signup', async (req, res) => {
@@ -484,6 +513,9 @@ route('POST', '/api/b/:slug/join', async (req, res, _u, p) => {
   const info = db.prepare(
     'INSERT INTO entries (business_id, day, number, name, note, source) VALUES (?,?,?,?,?,?)'
   ).run(biz.id, day, next, name, note, source);
+  if (b.guest_token !== undefined && validGuestToken(b.guest_token)) {
+    db.prepare('UPDATE entries SET guest_token_hash=? WHERE id=?').run(pushHash(b.guest_token),info.lastInsertRowid);
+  }
   const e = db.prepare('SELECT * FROM entries WHERE id = ?').get(info.lastInsertRowid);
   send(res, 200, { ticket: ticketView(e, biz) });
 });
@@ -498,14 +530,19 @@ function ticketForGuest(slug, id) {
 route('GET', '/api/b/:slug/ticket/:id', async (req, res, _u, p) => {
   const { biz, e } = ticketForGuest(p.slug, p.id);
   if (!e) return send(res, 404, { error: 'Ticket nicht gefunden.' });
-  send(res, 200, { ticket: ticketView(e, biz) });
+  if (!guestAllowed(req,e)) return send(res,403,{error:'Dieses Ticket gehoert zu einem anderen Browser. Bitte den urspruenglichen Browser verwenden.'});
+  const view = ticketView(e,biz);
+  if (!e.guest_token_hash && currentSession(req)?.business_id !== e.business_id) {view.name='';view.note='';}
+  send(res, 200, { ticket: view });
 });
 
 route('POST', '/api/b/:slug/ticket/:id/cancel', async (req, res, _u, p) => {
   const { e } = ticketForGuest(p.slug, p.id);
   if (!e) return send(res, 404, { error: 'Ticket nicht gefunden.' });
-  if (e.status === 'waiting') {
+  if (!guestAllowed(req,e)) return send(res,403,{error:'Dieses Ticket gehoert zu einem anderen Browser.'});
+  if (['waiting','ready'].includes(e.status)) {
     db.prepare("UPDATE entries SET status = 'cancelled' WHERE id = ?").run(e.id);
+    push.removeTicket(e.id);
   }
   send(res, 200, { ok: true });
 });
@@ -550,7 +587,10 @@ route('POST', '/api/admin/business/:id/active', async (req, res, _u, p) => {
   const b = await readBody(req);
   const active = b.active ? 1 : 0;
   db.prepare('UPDATE businesses SET active = ? WHERE id = ?').run(active, biz.id);
-  if (!active) db.prepare('DELETE FROM sessions WHERE business_id = ?').run(biz.id); // alle Sessions beenden
+  if (!active) {
+    db.prepare('DELETE FROM sessions WHERE business_id = ?').run(biz.id);
+    push.cleanup();
+  } // alle Sessions beenden
   send(res, 200, { ok: true, id: biz.id, active: !!active });
 }, { admin: true });
 
@@ -604,6 +644,7 @@ route('POST', '/api/staff/entry/:id/status', async (req, res, _u, p, _q, session
   const sets = ['status = ?'];
   const vals = [s];
   if (s === 'ready') {
+    if (e.status !== 'ready') sets.push('ready_version = ready_version + 1');
     sets.push("ready_at = datetime('now')");
     if (session.employee_id) { sets.push('ready_by = ?'); vals.push(session.employee_id); }
   }
@@ -612,8 +653,14 @@ route('POST', '/api/staff/entry/:id/status', async (req, res, _u, p, _q, session
     if (session.employee_id) { sets.push('done_by = ?'); vals.push(session.employee_id); }
   }
   vals.push(e.id);
-  db.prepare(`UPDATE entries SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
-  const updated = db.prepare('SELECT * FROM entries WHERE id = ?').get(e.id);
+  let updated;
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.prepare(`UPDATE entries SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+    updated = db.prepare('SELECT * FROM entries WHERE id = ?').get(e.id);
+    push.onStatus(updated);
+    db.exec('COMMIT');
+  } catch (error) {db.exec('ROLLBACK');throw error;}
   send(res, 200, { entry: ticketView(updated, biz) });
 }, { staff: true });
 
@@ -709,6 +756,7 @@ function cleanupOldData() {
   const r2 = db.prepare("DELETE FROM entries WHERE created_at < datetime('now','-2 days')").run();
   const r3 = db.prepare("DELETE FROM sessions WHERE created_at < datetime('now','-12 hours')").run();
   const r4 = db.prepare("DELETE FROM admin_sessions WHERE created_at < datetime('now','-12 hours')").run();
+  push.cleanup();
   const n = r1.changes + r2.changes + r3.changes + r4.changes;
   if (n > 0) console.log(`Datenloeschung: ${n} Datensaetze entfernt (Aufbewahrungsfrist).`);
 }
@@ -857,6 +905,20 @@ const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
     const pathname = url.pathname;
+    res.setHeader('X-Content-Type-Options','nosniff');
+    res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');
+    if (pathname.startsWith('/api/')) res.setHeader('Cache-Control','no-store');
+    const manifest = pathname.match(/^\/b\/([a-z0-9-]{1,40})\/manifest.webmanifest$/);
+    if (manifest) {
+      const biz = getBusiness(manifest[1]);
+      if (!biz) return send(res,404,{error:'Geschaeft nicht gefunden.'});
+      res.writeHead(200,{'Content-Type':'application/manifest+json','Cache-Control':'no-cache'});
+      return res.end(JSON.stringify({id:`/b/${biz.slug}/`,name:`QueueUp - ${biz.name}`,short_name:'QueueUp',
+        start_url:`/b/${biz.slug}/`,scope:`/b/${biz.slug}/`,display:'standalone',background_color:'#f8fafc',theme_color:'#0d9488',
+        icons:[{src:'/icons/icon-192.png',sizes:'192x192',type:'image/png',purpose:'any'},
+          {src:'/icons/icon-512.png',sizes:'512x512',type:'image/png',purpose:'any'},
+          {src:'/icons/icon-maskable.png',sizes:'512x512',type:'image/png',purpose:'maskable'}]}));
+    }
 
     // Browser writes must come from this app. Webhooks use provider signatures instead.
     if (pathname.startsWith('/api/') && req.method !== 'GET' && !pathname.startsWith('/api/webhooks/')) {
@@ -937,7 +999,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
         return res.end('Nicht gefunden.');
       }
-      res.writeHead(200, { 'Content-Type': MIME[path.extname(filePath)] || 'application/octet-stream' });
+      res.writeHead(200, { 'Content-Type': MIME[path.extname(filePath)] || 'application/octet-stream', 'Cache-Control':'no-cache', ...(pathname==='/sw.js'?{'Service-Worker-Allowed':'/'}:{}) });
       res.end(data);
     });
   } catch (e) {
@@ -951,6 +1013,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`QueueUp SaaS laeuft: http://localhost:${PORT}`);
+  push.start();
 });
 
 
@@ -960,7 +1023,7 @@ function shutdown(signal) {
   if (stopping) return;
   stopping = true;
   console.log('Geordneter Stopp:', signal);
-  server.close(() => { db.close(); process.exit(0); });
+  Promise.all([push.stop(),new Promise(resolve => server.close(resolve))]).then(() => {db.close();process.exit(0);});
   server.closeIdleConnections();
   setTimeout(() => process.exit(1), 10000).unref();
 }

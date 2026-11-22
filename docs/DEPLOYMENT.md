@@ -131,10 +131,33 @@ vorbereiten. Erst danach Code hochladen. Keine bereits befüllte
 Produktionsdatenbank in einen ungeprüften Dienst kopieren.
 
 Railway baut die Node-App mit Railpack und startet `npm start`. Benötigt
-werden Node >= 22 sowie `DATA_DIR=/data`, eine eigene Demo-PIN in `STAFF_PIN`
+werden Node >= 22.13, `npm ci --omit=dev` sowie `DATA_DIR=/data`, eine eigene Demo-PIN in `STAFF_PIN`
 und die Admin-Zugangsdaten `ADMIN_EMAIL` / `ADMIN_PASSWORD`. Geheimnisse nur
 über geeignete geheime Einstellungen setzen, nie in Git oder Ausgaben.
 Provider-Schlüssel können später verschlüsselt im Admin hinterlegt werden.
+
+## PWA-Rollout ab v0.6.0
+
+Dieser Abschnitt beschreibt den Release-Pfad, keine vorweggenommene
+Produktivabnahme. Der letzte bestätigte Live-Release steht weiter oben.
+
+- Lockfile mit hochladen und Abhängigkeiten installieren. Die App verwendet
+  jetzt `web-push`; ein Start ohne `npm ci` reicht nach frischem Checkout nicht.
+- Genau eine EU-Replik beibehalten, Datenbank und Volume nicht ersetzen.
+- `RAILWAY_PUBLIC_DOMAIN` ist auf diesem Dienst vorhanden und liefert die
+  echte HTTPS-Adresse für VAPID. Es ist keine zusätzliche Secret-Eingabe nötig.
+- Beim ersten Start wird vor der additiven Ticket-Migration eine geschützte
+  lokale SQLite-Sicherung erstellt; Bestandstickets bleiben erhalten.
+- Die neue `.push-identity.json` muss auf demselben persistenten Volume bleiben.
+  Nicht ausgeben oder ins Repository kopieren. Backup/Restore mit Datenbank
+  und beiden Anwendungsschlüsseldateien separat abnehmen.
+- Nach Deploy: Version/Startlogs, EU-only-Manifest, Settings, Gastformular,
+  geschütztes eigenes Ticket, Staff-Queue, PWA-Manifest/Icons/Worker und
+  Abmeldung prüfen. Nur eigene Testtickets ändern.
+- Alte öffentliche Ticketansichten liefern keinen Namen/Notiz mehr. Ihre
+  Nummer/Status funktionieren weiter, Push nur mit neuem Browser-Besitznachweis.
+- Echte Push-Zustellung und physische Handy-Signale bleiben ein eigenes Gate,
+  siehe [WEB-PUSH.md](WEB-PUSH.md) und [PILOT-CHECKLIST.md](PILOT-CHECKLIST.md).
 
 ## Betrieb und Abnahme
 

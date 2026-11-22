@@ -6,6 +6,8 @@ const TKEY = 'ql_ticket_' + SLUG;
 const BASE = '/api/b/' + encodeURIComponent(SLUG);
 const ticketId = new URLSearchParams(location.search).get('id');
 if (!ticketId) location.replace('/b/' + SLUG);
+const ownerKey = 'ql_owner_'+SLUG+'_'+ticketId;
+const ownerToken = localStorage.getItem?.(ownerKey) || '';
 applyI18n();
 renderLangPicker('langPicker');
 const $ = (id) => document.getElementById(id);
@@ -21,7 +23,7 @@ let polling = false;
 $('privacyLink').href = '/b/' + SLUG + '/privacy';
 
 async function api(path, options = {}) {
-  const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...options });
+  const res = await fetch(path, { headers: { 'Content-Type': 'application/json', ...(ownerToken?{'X-Ticket-Token':ownerToken}:{}) }, ...options });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Error ' + res.status);
   return data;
@@ -31,6 +33,7 @@ function updateSoundControls() {
   const running = audioContext?.state === 'running';
   $('soundBtn').textContent = t(running ? 'sound_on' : 'sound_enable');
   $('soundState').textContent = t(running ? 'sound_active' : 'sound_inactive');
+  if (window.QueuePush) {window.QueuePush.refreshText();return;}
   const supported = 'Notification' in window && !notificationFailed;
   $('notifyBtn').disabled = !supported;
   $('notifyBtn').textContent = t(!supported ? 'notify_unavailable' :
@@ -98,6 +101,7 @@ function vibrate(pattern) {
   try { if (navigator.vibrate) navigator.vibrate(pattern); } catch { /* optional */ }
 }
 function browserNotice(ticket, body, persistent = false) {
+  if (window.QueuePush?.active) return;
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   try {
     // Some mobile browsers expose Notification but reject its constructor.
@@ -175,6 +179,8 @@ function render(ticket) {
       $('ticketStatus').textContent = t(ticket.status === 'done' ? 'status_done' : 'status_cancelled');
       $('ticketSub').textContent = '';
       $('leaveBtn').classList.add('hidden');
+      window.QueuePush?.finish();
+      localStorage.removeItem(ownerKey);
     }
   }
 }
@@ -191,6 +197,7 @@ async function poll() {
 }
 $('soundBtn').onclick = () => enableSound(true);
 $('notifyBtn').onclick = async () => {
+  if (window.QueuePush) return window.QueuePush.toggle();
   const sound = enableSound(false);
   try {
     if ('Notification' in window) await Notification.requestPermission();
@@ -201,6 +208,7 @@ $('notifyBtn').onclick = async () => {
 $('leaveBtn').onclick = async () => {
   try { await api(`${BASE}/ticket/${ticketId}/cancel`, { method: 'POST' }); } catch { /* retry via own ticket */ return; }
   localStorage.removeItem(TKEY);
+  localStorage.removeItem(ownerKey);
   location.href = '/b/' + SLUG;
 };
 const origSetLang = setLang;

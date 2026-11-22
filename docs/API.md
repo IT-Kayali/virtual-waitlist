@@ -29,9 +29,28 @@ an genau ein Geschäft gebunden) · Inhaber (E-Mail + Passwort, `kind=owner`).
 |---|---|---|
 | GET | `/api/b/:slug/settings` | Öffentliche Daten: `{"venue","slug","has_logo"}`. |
 | GET | `/api/b/:slug/logo` | Logo-Datei (404 wenn keins). PNG/JPEG/WebP/SVG. |
-| POST | `/api/b/:slug/join` | Gast reiht sich ein. Body: `{"name","note","source"}` (alle optional; `source`: `guest` \| `counter` für den Tresen-Bildschirm). |
-| GET | `/api/b/:slug/ticket/:id` | Ticket-Status (Polling). |
-| POST | `/api/b/:slug/ticket/:id/cancel` | Warteschlange verlassen (nur solange `waiting`). |
+| POST | `/api/b/:slug/join` | Gast reiht sich ein. Body: `{"name","note","source","guest_token"}` (alle optional; `source`: `guest` \| `counter` für den Tresen-Bildschirm). |
+| GET | `/api/b/:slug/ticket/:id` | Ticket-Status (Polling). Bei mit `guest_token` erstellten Tickets Header `X-Ticket-Token` erforderlich (oder Personal desselben Geschäfts). |
+| POST | `/api/b/:slug/ticket/:id/cancel` | Warteschlange verlassen (`waiting` oder `ready`); Besitznachweis wie beim Lesen. |
+
+`guest_token` ist ein vom Gäste-Browser erzeugter 64-stelliger Hex-String
+(32 Zufallsbytes), nicht vom Server öffentlich zurücklesbar. Aktuelle Gäste-
+Oberflächen verwenden ihn immer. Ältere Clients ohne Token bleiben kompatibel,
+aber ohne Push; ihre öffentlichen Ticketdaten enthalten keinen Namen/Notiz.
+
+## Web Push ab v0.6.0
+
+| Methode | Pfad | Zweck |
+| --- | --- | --- |
+| GET | `/api/push/config` | Öffentlicher VAPID-Schlüssel und `enabled`; keine privaten Schlüssel |
+| GET | `/b/:slug/manifest.webmanifest` | Geschäfts-PWA, Start-URL und Icons |
+| POST | `/api/b/:slug/ticket/:id/push/subscribe` | Header `X-Ticket-Token` zwingend. Body `subscription` aus PushManager und `lang` (de/en/ar). Maximal drei Geräte, nur aktives Ticket. |
+| POST | `/api/b/:slug/ticket/:id/push/status` | Derselbe Besitznachweis; Body `endpoint`, Antwort `subscribed` |
+| POST | `/api/b/:slug/ticket/:id/push/unsubscribe` | Entfernt nur diese Ticket-Anmeldung; Body `endpoint`, derselbe Besitznachweis |
+
+Push-Mutationen brauchen JSON und eine passende Browser-Origin. Server-
+Antworten werden nicht gecacht. Der Service Worker `/sw.js` hat Root-Scope,
+aber keinen API-Fetch-Handler. Mehr: [WEB-PUSH.md](WEB-PUSH.md).
 
 ## Personal (Session an Geschäft gebunden)
 
@@ -88,7 +107,7 @@ Seite: `/admin` (deutsch).
   "status": "waiting", "source": "guest",
   "created_at": "2026-11-22 00:13:09", "ready_at": null,
   "ahead": 0, "waiting_total": 3, "notify_ahead": 2,
-  "est_minutes": 5, "venue": "QueueUp Café", "slug": "demo"
+  "est_minutes": 5, "venue": "QueueUp Café", "slug": "demo", "push_eligible": true
 }
 ```
 

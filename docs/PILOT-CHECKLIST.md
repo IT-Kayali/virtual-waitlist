@@ -70,6 +70,27 @@ Ein zufällig erfolgreicher Einzeltest begründet keine allgemeine Zusage.
 - [ ] Gästehinweise, Werbung und Personal-Einweisung machen keine stärkeren
   Benachrichtigungszusagen als die geprüfte Funktion erlaubt.
 
+## Zusätzliche Web-Push-Abnahme ab v0.6.0
+
+- [ ] iPhone/iPad ab 16.4: vor dem Beitritt installieren, aus dem Home-Screen
+  starten, neues Ticket erstellen und Push ausdrücklich erlauben.
+- [ ] Android: unterstützter Browser, neues Ticket, ausdrückliches Opt-in.
+- [ ] Kein Dialog beim bloßen Laden; Ablehnen/Blockieren verständlich erklärt.
+- [ ] Echten Aufruf bei geschlossener Seite, Hintergrund-App und gesperrtem
+  Handy prüfen, mit Zeit bis Zustellung und tatsächlichem Ton/Vibration.
+- [ ] Push ausschalten, Ticket abbrechen/abholen und Geschäft sperren:
+  keine weiteren ausstehenden Aufträge für diese Anmeldung.
+- [ ] Bestehende alte Tickets und ein fremdes Gerät erhalten kein Push allein
+  über die Nummer. Name/Bestellnotiz in alten öffentlichen Ansichten entfernt.
+- [ ] Bereits angenommene Nachrichten können verspätet eintreffen. Texte und
+  Personalablauf berücksichtigen das; keine exakte Zustellgarantie.
+- [ ] Browseranbieter als Transport und mögliche Verarbeitung außerhalb der
+  EU sind im tatsächlichen Datenschutzablauf geprüft. Keine EU-only-Zusage
+  allein aus der Railway-Laufzeitregion ableiten.
+
+Technischer Ablauf: [WEB-PUSH.md](WEB-PUSH.md). Mock-/Layouttests ersetzen
+keinen dieser physischen Zustelltests.
+
 ## Betrieb und Zahlungen
 
 - [ ] Backup und Wiederherstellung der SQLite-Datenbank und der benötigten

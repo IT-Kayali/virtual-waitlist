@@ -9,8 +9,9 @@ strikt getrennt von allen anderen.
 **Live:** https://virtual-waitlist-production.up.railway.app
 (Demo-Geschäft: `/b/demo`, Personal-Dashboard: `/b/demo/staff`, PIN im Tresor des Besitzers)
 
-**Null Abhängigkeiten:** reines Node.js ≥ 22 mit eingebautem SQLite
-(`node:sqlite`). Kein `npm install` nötig.
+**Technik:** Node.js ≥ 22.13 mit eingebautem SQLite (`node:sqlite`) und
+`web-push` für optionale Hintergrund-Benachrichtigungen. Installation: `npm ci`.
+Der aktuelle Produktivstand steht in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## So funktioniert es
 
@@ -78,10 +79,14 @@ Registrierung und Login für Geschäfte liegen unter `/anmelden`.
    automatisch (alle 3 Sekunden).
 3. **„Fast dran"-Benachrichtigung** (Ton + Vibration + Hinweis), sobald nur
    noch so viele Gäste davor sind, wie das Geschäft eingestellt hat.
-4. Sobald die Bestellung fertig ist: **grüner Vollbild-Alarm** – laute,
-   sich wiederholende Melodie (bis man tippt), Vibration, optional
-   Browser-Benachrichtigung.
-5. Keine App, keine Anmeldung, keine Cookies.
+4. Sobald die Bestellung fertig ist: sichtbarer grüner Hinweis. Nach bewusstem
+   **Ton aktivieren / testen** wiederholte Melodie auf der offenen Seite.
+   Ton und Vibration sind geräteabhängig, keine Garantie für gesperrte Handys.
+5. Ab v0.6.0 optionaler Web-Push-Aufruf nach ausdrücklicher Erlaubnis. Auf
+   iPhone/iPad zuerst die Home-Screen-Web-App öffnen, dann dort beitreten.
+   Alte Tickets bleiben In-Page-Tickets. Details: [WEB-PUSH.md](docs/WEB-PUSH.md).
+6. Kein Gästekonto. Lokaler Browser-Speicher hält Ticket, Zugriffsschlüssel
+   und Sprache; bei Push kommt der jeweilige Browseranbieter als Transport hinzu.
 
 Nummern starten pro Geschäft täglich neu. Die Wartezeit-Schätzung nutzt die
 tatsächliche durchschnittliche Bedienzeit des Geschäfts an diesem Tag
@@ -90,10 +95,13 @@ tatsächliche durchschnittliche Bedienzeit des Geschäfts an diesem Tag
 ## Datenschutz (DSGVO)
 
 - **Datenminimierung:** Name und Bestellnotiz sind freiwillig. Keine
-  Gäste-Konten, keine Cookies, kein Tracking, keine Weitergabe an Dritte.
+  Gäste-Konten und kein Werbe-Tracking. Bei optionalem Push transportiert der
+  Browseranbieter eine verschlüsselte Nachricht ohne Name/Bestellnotiz.
 - **Automatische Löschung:** abgeschlossene/stornierte Tickets nach
-  **24 Stunden**, alle Tickets spätestens nach **48 Stunden**,
-  Personal-Sessions nach 12 Stunden (läuft beim Start und stündlich).
+  einem Alter von **24 Stunden**, alle Tickets ab **48 Stunden**,
+  Personal-Sessions ab 12 Stunden (Löschlauf beim Start und stündlich).
+  Push-Anmeldungen enden mit Ticket/Abmeldung, spätestens ab 48 Stunden
+  im nächsten Push-Löschlauf.
 - **Mandantentrennung:** jeder Datensatz gehört zu genau einem Geschäft
   (`business_id`); API-Zugriffe sind immer auf das eigene Geschäft beschränkt.
 - **Transparenz:** Datenschutzerklärung pro Geschäft unter
@@ -103,6 +111,7 @@ tatsächliche durchschnittliche Bedienzeit des Geschäfts an diesem Tag
 ## Schnellstart lokal
 
 ```bash
+npm ci
 node server.js
 # Startseite:                       http://localhost:3000
 # Registrierung/Login:              http://localhost:3000/anmelden
@@ -110,7 +119,7 @@ node server.js
 # Personal-Dashboard:               http://localhost:3000/b/demo/staff   (PIN: 0000)
 ```
 
-Voraussetzung: **Node.js 22+**. Beim ersten Start wird automatisch ein
+Voraussetzung: **Node.js ≥ 22.13**. Beim ersten Start wird automatisch ein
 Demo-Geschäft angelegt (Slug `demo`, PIN aus `STAFF_PIN`). Eine bestehende
 Datenbank aus der Single-Tenant-Version (≤ 0.1.x) wird beim Start automatisch
 in das Demo-Geschäft migriert; alte Links (`/ticket?id=…`) leiten sauber um.
@@ -138,6 +147,7 @@ Einrichtung, benötigte Schlüssel, Grenzen und ausstehende Sandbox-Abnahme:
 | `STAFF_PIN` | `0000` | Personal-PIN des **Demo-Geschäfts** (nur Erstsetup/Migration) – **immer setzen!** |
 | `DATA_DIR` | `./data` | Verzeichnis für SQLite-Datei und Logos. Auf Railway: `/data` (Volume) |
 | `ADMIN_EMAIL` | – | E-Mail des Plattform-Admins (`/admin`). Ohne diese Variablen ist der Admin-Bereich deaktiviert. |
+| `PUBLIC_BASE_URL` | – | Echte HTTPS-Basisadresse für Push; auf Railway reicht alternativ `RAILWAY_PUBLIC_DOMAIN`. |
 | `ADMIN_PASSWORD` | – | Passwort des Plattform-Admins – **immer setzen und geheim halten!** |
 
 ## Dokumentation
@@ -145,6 +155,7 @@ Einrichtung, benötigte Schlüssel, Grenzen und ausstehende Sandbox-Abnahme:
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) – Live-Setup und belegter EU-Release-Pfad
 - [docs/PILOT-CHECKLIST.md](docs/PILOT-CHECKLIST.md) – offenes Gate vor echten Gästen: Betreiberangaben und Handy-Benachrichtigungen
 - [docs/API.md](docs/API.md) – REST-API-Referenz
+- [docs/WEB-PUSH.md](docs/WEB-PUSH.md) – PWA, Opt-in, Besitznachweis, Zustelllogik und offene Geräteabnahme
 - [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md) – Ton aktivieren, Alarmgrenzen und weitere Optionen
 - [docs/BILLING.md](docs/BILLING.md) – Abo-Zahlungen und Anbieter-Einrichtung
 - [docs/LOAD-TEST.md](docs/LOAD-TEST.md) – gemessener Lasttest mit 10/50/100 parallelen Abläufen
@@ -160,6 +171,9 @@ Die öffentliche Marketing-Webseite ist Deutsch. Das Personal-Dashboard ist aktu
 ## Projektstruktur
 
 ```
+push.js               Verschlüsselte Push-Anmeldungen, VAPID, persistente Outbox
+public/pwa.js         PWA-Einrichtung und ausdrücklicher Push-Opt-in
+public/sw.js          Push-Anzeige und sichere Ticket-Klickziele, kein API-Cache
 server.js             Backend: HTTP-Server, REST-API, SQLite-Schema, Migration, Löschjob
 public/landing.html   SaaS-Startseite (Registrierung/Login)
 public/landing.js

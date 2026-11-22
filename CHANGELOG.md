@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.6.0 - 22.11.2026
+
+- Optionale PWA/Web-Push-Aufrufe für neue Gäste-Tickets, nach ausdrücklichem
+  Opt-in. Tenant-Manifest, Icons, Service Worker und iOS-Home-Screen-Hinweis.
+- Browser-Besitznachweis für neue Tickets aus Gäste-/Kiosk-Oberflächen.
+  Alte Ticketlinks behalten Nummer/Status, geben Name/Notiz nicht mehr aus
+  und erlauben kein allein linkbasiertes Push-Opt-in.
+- Verschlüsselte Abonnements und persistente Outbox mit begrenzten Retries,
+  TTL, Aufruf-Deduplizierung, VAPID-Cache, Provider-Allowlist und 410-Cleanup.
+- Abmeldung, Ticketende oder Geschäftssperre entfernen Push-Anmeldungen.
+  Gäste können jetzt auch ein bereites Ticket verlassen.
+- `web-push` 4.0.0 und Lockfile. Installation jetzt `npm ci`, Node >=22.13.
+- Datenschutz-/Betriebshinweise und automatische lokale Sicherung vor der
+  additiven Migration. Geräte-/Gateway-Abnahme und Pilotfreigabe bleiben offen.
+- Neue HTTP-, Worker-, Besitznachweis- und Opt-in-Regressionen. Lokale
+  Chrome-Sichtprüfung ist kein Beleg für echte Handy-Zustellung.
+
 ## 0.5.1 - 22.11.2026
 
 - Bei der Live-Sichtprüfung einen älteren Weiß-auf-Hellgrün-Konflikt im

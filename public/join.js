@@ -30,7 +30,7 @@ api(BASE + '/settings').then((d) => {
 // Schon ein aktives Ticket bei diesem Geschaeft? Direkt weiterleiten.
 const existing = localStorage.getItem(TKEY);
 if (existing) {
-  api(BASE + '/ticket/' + existing).then((d) => {
+  api(BASE + '/ticket/' + existing, {headers:{'X-Ticket-Token':localStorage.getItem('ql_owner_'+SLUG+'_'+existing)||''}}).then((d) => {
     if (['waiting', 'ready'].includes(d.ticket.status)) {
       location.replace('/b/' + SLUG + '/ticket?id=' + existing);
     } else {
@@ -47,13 +47,16 @@ document.getElementById('joinForm').onsubmit = async (e) => {
   btn.disabled = true;
   btn.textContent = t('joining');
   try {
+    const guestToken = window.QueuePush.createToken();
     const data = await api(BASE + '/join', {
       method: 'POST',
       body: JSON.stringify({
+        guest_token: guestToken,
         name: document.getElementById('nameInput').value,
         note: document.getElementById('noteInput').value,
       }),
     });
+    localStorage.setItem('ql_owner_' + SLUG + '_' + data.ticket.id, guestToken);
     localStorage.setItem(TKEY, data.ticket.id);
     location.href = '/b/' + SLUG + '/ticket?id=' + data.ticket.id;
   } catch (ex) {

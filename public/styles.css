@@ -259,3 +259,12 @@ a.btn { text-decoration: none; display: inline-block; text-align: center; }
 @media (prefers-reduced-motion: reduce) {
   .flash-ready, .pulse { animation: none; }
 }
+
+/* Push controls stay in normal flow and remain readable on narrow screens. */
+.push-panel {border-top:1px solid #dbe4e9;margin-top:16px;padding-top:12px;text-align:start;}
+.push-panel .btn {width:100%;white-space:normal;}
+.push-panel .ticket-sub {line-height:1.5;}
+.pwa-install {background:#e8f5f2;color:#123f37;border:1px solid #b7d9ce;border-radius:12px;padding:12px;font-size:.9rem;line-height:1.5;}
+
+.push-panel details {margin:10px 0;}
+.push-panel summary {cursor:pointer;color:#0b716a;}

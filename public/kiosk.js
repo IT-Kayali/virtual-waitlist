@@ -37,14 +37,17 @@ document.getElementById('kioskForm').onsubmit = async (e) => {
   btn.disabled = true;
   btn.textContent = t('joining');
   try {
+    const guestToken = window.QueuePush.createToken();
     const data = await api(BASE + '/join', {
       method: 'POST',
       body: JSON.stringify({
+        guest_token: guestToken,
         name: document.getElementById('nameInput').value,
         note: document.getElementById('noteInput').value,
         source: 'counter',
       }),
     });
+    localStorage.setItem('ql_owner_' + SLUG + '_' + data.ticket.id, guestToken);
     localStorage.setItem(TKEY, data.ticket.id);
     location.href = '/b/' + SLUG + '/ticket?id=' + data.ticket.id;
   } catch (ex) {

@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>QueueUp – Your ticket</title>
-<link rel="stylesheet" href="/styles.css?v=0.5.1a">
+<link rel="stylesheet" href="/styles.css?v=0.6.0">
+<meta name="theme-color" content="#0d9488">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="QueueUp">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 </head>
 <body>
 <div class="ticket-wrap" id="wrap">
@@ -38,14 +42,21 @@
       <p class="ticket-sub" id="soundState" role="status"></p>
       <p class="ticket-sub" data-i18n="notification_limits"></p>
       <p class="ticket-sub" id="connectionHint" role="status"></p>
-      <button class="btn ghost" id="notifyBtn" data-i18n="notify_btn">🔔 Notify me</button>
+      <div class="push-panel">
+        <p id="installHint" class="pwa-install hidden" role="note"></p>
+        <p id="pushState" class="ticket-sub" role="status" data-i18n="push_loading"></p>
+        <p class="ticket-sub" data-i18n="push_privacy_short"></p>
+        <details class="ticket-sub"><summary data-i18n="push_details"></summary><p data-i18n="push_privacy"></p></details>
+        <button class="btn ghost" id="notifyBtn" disabled>Push</button>
+      </div>
       <button class="btn danger" id="leaveBtn" data-i18n="leave_btn">Leave the queue</button>
       <p class="ticket-sub" data-i18n="updates_auto">This page updates automatically.</p>
       <p class="ticket-sub"><a id="privacyLink" href="/privacy" data-i18n="privacy_link">Privacy</a></p>
     </div>
   </div>
 </div>
-<script src="/i18n.js?v=0.5.1"></script>
-<script src="/ticket.js?v=0.5.1"></script>
+<script src="/i18n.js?v=0.6.0"></script>
+<script src="/pwa.js?v=0.6.0"></script>
+<script src="/ticket.js?v=0.6.0"></script>
 </body>
 </html>

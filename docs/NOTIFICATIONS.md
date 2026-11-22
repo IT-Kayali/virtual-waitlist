@@ -1,7 +1,10 @@
 # Ticket-Alarm und Hintergrund-Benachrichtigungen
 
-Stand v0.5.1, 22.11.2026. Die aktuelle Lösung ist ein Alarm auf der geöffneten
-Ticket-Seite, kein garantierter Push-Dienst für gesperrte Handys.
+Ab Codeversion v0.6.0 ist optionales PWA/Web Push beauftragt und implementiert.
+Aktueller Produktivstand: [DEPLOYMENT.md](DEPLOYMENT.md). Einrichtung,
+Besitznachweis, Datenschutz und verbleibende Abnahme: [WEB-PUSH.md](WEB-PUSH.md).
+Die folgenden In-Page-Regeln gelten weiter, insbesondere für alte Tickets
+und ohne aktivierten Push.
 
 ## Gastablauf
 
@@ -42,11 +45,12 @@ prüfen den Ablauf mit kontrollierten Browser-Objekten. Sie beweisen keinen
 hörbaren Ton oder eine fühlbare Vibration auf einem echten iPhone/Android.
 Die physische Geräte-Abnahme bleibt im [Pre-Pilot-Gate](PILOT-CHECKLIST.md) offen.
 
-## Zusätzliche Wege, noch nicht umgesetzt
+## Andere Wege und frühere Aufwandsschätzungen
 
 Die Zeitangaben sind grobe technische Schätzungen ohne Anbieter-Freischaltung,
-keine Lieferzusagen. Keine der folgenden Erweiterungen wurde beauftragt oder
-aktiviert. Anbieter- und Kostenentscheidungen brauchen eine eigene Freigabe.
+keine Lieferzusagen. Web Push wurde am 22.11. beauftragt; die anderen Wege
+sind nicht beauftragt oder aktiviert. Neue Anbieter-/Kostenentscheidungen
+brauchen eine eigene Freigabe.
 
 | Weg | Grober Aufwand | Grenzen und Kosten |
 |---|---|---|
