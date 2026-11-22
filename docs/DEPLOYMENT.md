@@ -1,6 +1,6 @@
 # Deployment und EU-Release-Pfad
 
-Stand: 22.11.2026, Anwendung v0.5.0. Die App läuft als einzelner Node-Prozess
+Stand: 22.11.2026, Anwendung v0.5.1. Die App läuft als einzelner Node-Prozess
 mit SQLite und einem persistenten Volume auf Railway.
 
 ## Aktuelles Setup
@@ -71,6 +71,27 @@ Rollout stoppen und untersuchen, nicht auf nachträgliches Verschieben bauen.
 GitHub-Push und Produktiv-Deploy sind getrennte Schritte. Ein reiner
 Dokumentationsabschluss braucht keinen zusätzlichen App-Neustart. Auto-Deploy
 ist hier nicht als Ersatz für diese Regionsprüfung freigegeben.
+
+## Letzter gepruefter Release: v0.5.1
+
+Am 22.11.2026 gegen 19:17 CET war Deployment
+`ed97010b-d59f-44ce-a414-86de11aeec34` auf SUCCESS. Bereits beim Anlegen
+enthielt sein Manifest nur eine EU-West-Replik. Die Startlogs zeigen v0.5.1
+und keinen Anwendungsfehler. Startseite, Preise, Abo, Admin und die
+Demo-Settings antworteten mit HTTP 200.
+
+Der Ticket-Alarm wurde mit einem eigenen Demo-Testticket geprueft: Bereits
+aufgerufenes Ticket nach Neuladen sichtbar, AudioContext nach ausdruecklichem
+Tippen aktiv und wiederholender Alarm beim Wechsel von wartend zu bereit.
+Die mobile Ansicht wurde visuell kontrolliert. Anschliessend wurde nur das
+eigene Testticket abgemeldet. Ein realer Handy-Sperrbildschirm-/Hintergrundtest
+ist damit nicht belegt; Details stehen in [NOTIFICATIONS.md](NOTIFICATIONS.md).
+
+Die Crash-Mail von 19:10:56 CET verweist auf das abgeloeste Deployment
+`90cf46de-4931-4570-a2d4-b1e5f6c6ec46` mit v0.5.0. Dessen letzte Logs zeigen
+einen Container-Stopp und npm/SIGTERM, keinen Anwendungs-Stacktrace. Der alte
+Release ist REMOVED. Das ist kein Beleg fuer einen aktuellen Ausfall; die
+genaue Klassifizierung dieses Stopps durch Railway bleibt offen.
 
 ## Nachweis mit einem Wegwerf-Dienst
 
