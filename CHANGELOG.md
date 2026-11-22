@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.1 - 22.11.2026
+
+- Ticket-Alarm auch bei bereits bereitem Ticket auf erster Seitenladung.
+- Ein wiederverwendbarer Audiokontext wird über einen bewussten Tippen-
+  und Testschritt aktiviert, statt im Polling neue Kontexte anzulegen.
+- Unbestätigten Alarm nach Rückkehr aus dem Hintergrund erneut anbieten;
+  bestätigte Alarme bleiben ruhig. Abholung/Stornierung stoppt den Ton.
+- Nicht unterstützte Notification-Konstruktoren blockieren den Ablauf nicht.
+  Verbindungsfehler werden sichtbar. Keine neue Push-/Mail-/SMS-Lösung.
+- EN/DE/AR-Hinweise benennen die Grenzen bei gesperrtem Handy ausdrücklich.
+  Regressionsfälle und weitere Optionen in docs/NOTIFICATIONS.md.
+
+
 ## 0.5.0 - 22.11.2026
 
 - EU-Release-Pfad mit zwei Dummy-Uploads belegt: Workspace-Standard EU West,

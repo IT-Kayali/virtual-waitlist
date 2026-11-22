@@ -4,17 +4,20 @@ const SLUG = (location.pathname.match(/^\/b\/([^/]+)/) || [])[1];
 if (!SLUG) location.replace('/');
 const TKEY = 'ql_ticket_' + SLUG;
 const BASE = '/api/b/' + encodeURIComponent(SLUG);
-
 const ticketId = new URLSearchParams(location.search).get('id');
 if (!ticketId) location.replace('/b/' + SLUG);
-
 applyI18n();
 renderLangPicker('langPicker');
-
 const $ = (id) => document.getElementById(id);
-let lastStatus = null;
-let notified = false;
+let currentTicket = null;
 let almostNotified = false;
+let readyShown = false;
+let readyAcknowledged = false;
+let readyNotificationSent = false;
+let notificationFailed = false;
+let audioContext = null;
+let beepTimer = null;
+let polling = false;
 $('privacyLink').href = '/b/' + SLUG + '/privacy';
 
 async function api(path, options = {}) {
@@ -24,149 +27,200 @@ async function api(path, options = {}) {
   return data;
 }
 
-// Akustisches Signal: laute, wiederholte Melodie (WebAudio, kein externes Asset)
-let beepTimer = null;
-function beepOnce() {
+function updateSoundControls() {
+  const running = audioContext?.state === 'running';
+  $('soundBtn').textContent = t(running ? 'sound_on' : 'sound_enable');
+  $('soundState').textContent = t(running ? 'sound_active' : 'sound_inactive');
+  const supported = 'Notification' in window && !notificationFailed;
+  $('notifyBtn').disabled = !supported;
+  $('notifyBtn').textContent = t(!supported ? 'notify_unavailable' :
+    (Notification.permission === 'granted' ? 'notify_on' : 'notify_btn'));
+}
+
+// One reusable context, created/resumed only by a deliberate user gesture.
+function playNotes(frequencies, volume = 0.3) {
+  if (!audioContext || audioContext.state !== 'running') return false;
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [880, 1108, 1318, 1760].forEach((f, i) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.frequency.value = f;
-      g.gain.setValueAtTime(0.001, ctx.currentTime + i * 0.18);
-      g.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + i * 0.18 + 0.03);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.16);
-      o.start(ctx.currentTime + i * 0.18);
-      o.stop(ctx.currentTime + i * 0.18 + 0.18);
+    frequencies.forEach((frequency, i) => {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.connect(gain); gain.connect(audioContext.destination);
+      oscillator.frequency.value = frequency;
+      const at = audioContext.currentTime + i * 0.2;
+      gain.gain.setValueAtTime(0.001, at);
+      gain.gain.exponentialRampToValueAtTime(volume, at + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, at + 0.17);
+      oscillator.start(at); oscillator.stop(at + 0.2);
     });
-  } catch { /* stumm */ }
+    return true;
+  } catch { return false; }
+}
+
+async function enableSound(testTone = true) {
+  try {
+    const Audio = window.AudioContext || window.webkitAudioContext;
+    if (!Audio) throw new Error('Audio unsupported');
+    if (!audioContext || audioContext.state === 'closed') {
+      audioContext = new Audio();
+      audioContext.onstatechange = updateSoundControls;
+    }
+    // Call resume synchronously from the click, before awaiting anything else.
+    await audioContext.resume();
+    updateSoundControls();
+    if (testTone) playNotes([988, 1318], 0.2);
+    return audioContext.state === 'running';
+  } catch {
+    updateSoundControls();
+    $('soundState').textContent = t('sound_blocked');
+    return false;
+  }
+}
+
+function stopBeeping() {
+  if (beepTimer !== null) { clearInterval(beepTimer); beepTimer = null; }
 }
 function startBeeping() {
-  beepOnce();
-  if (!beepTimer) beepTimer = setInterval(beepOnce, 1600); // wiederholt, bis der Nutzer tippt
+  if (beepTimer !== null || document.hidden) return;
+  if (!playNotes([880, 1108, 1318, 1760], 0.4)) {
+    updateSoundControls();
+    return;
+  }
+  beepTimer = setInterval(() => {
+    if (document.hidden || currentTicket?.status !== 'ready' || readyAcknowledged) {
+      stopBeeping(); return;
+    }
+    if (!playNotes([880, 1108, 1318, 1760], 0.4)) {
+      stopBeeping(); updateSoundControls();
+    }
+  }, 1600);
 }
-function stopBeeping() {
-  if (beepTimer) { clearInterval(beepTimer); beepTimer = null; }
+function vibrate(pattern) {
+  try { if (navigator.vibrate) navigator.vibrate(pattern); } catch { /* optional */ }
 }
-window.addEventListener('pointerdown', stopBeeping);
-window.addEventListener('keydown', stopBeeping);
-
-// Dezenteres Signal fuer "fast dran"
-function beepAlmost() {
+function browserNotice(ticket, body, persistent = false) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [988, 1318].forEach((f, i) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.frequency.value = f;
-      g.gain.setValueAtTime(0.001, ctx.currentTime + i * 0.22);
-      g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + i * 0.22 + 0.03);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.22 + 0.18);
-      o.start(ctx.currentTime + i * 0.22);
-      o.stop(ctx.currentTime + i * 0.22 + 0.2);
-    });
-  } catch { /* stumm */ }
+    // Some mobile browsers expose Notification but reject its constructor.
+    new Notification(ticket.venue, { body, requireInteraction: persistent });
+  } catch { notificationFailed = true; updateSoundControls(); }
 }
+function acknowledgeReady() {
+  if (currentTicket?.status === 'ready') {
+    readyAcknowledged = true;
+    stopBeeping();
+    vibrate(0);
+  }
+}
+window.addEventListener('pointerdown', acknowledgeReady);
+window.addEventListener('keydown', acknowledgeReady);
 
 function alertAlmost(ticket) {
-  if (almostNotified) return;
+  if (almostNotified || document.hidden) return;
   almostNotified = true;
-  beepAlmost();
-  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification(ticket.venue, { body: t('status_almost') });
-  }
+  playNotes([988, 1318], 0.25);
+  vibrate([200, 100, 200]);
+  browserNotice(ticket, t('status_almost'));
 }
-
 function alertReady(ticket) {
-  if (notified) return;
-  notified = true;
+  if (readyAcknowledged) return;
+  // Best-effort desktop browser notice may work while a tab is hidden.
+  // It is not Web Push and must not consume the later in-page alert.
+  if (!readyNotificationSent) {
+    readyNotificationSent = true;
+    browserNotice(ticket, t('status_ready'), true);
+  }
+  if (document.hidden || readyShown) return;
+  readyShown = true;
   startBeeping();
-  if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400, 150, 800]);
+  vibrate([400, 150, 400, 150, 400, 150, 800]);
   document.body.classList.add('flash-ready');
   setTimeout(() => document.body.classList.remove('flash-ready'), 1200);
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification(ticket.venue, { body: t('status_ready'), requireInteraction: true });
-  }
 }
 
 function render(ticket) {
+  if (ticket.status === 'ready' && currentTicket?.status !== 'ready') {
+    readyShown = false;
+    readyAcknowledged = false;
+    readyNotificationSent = false;
+  }
+  currentTicket = ticket;
   $('venueName').textContent = ticket.venue;
   $('ticketNumber').textContent = ticket.number;
-  const wrap = $('wrap');
-  wrap.classList.toggle('is-ready', ticket.status === 'ready');
-
+  $('wrap').classList.toggle('is-ready', ticket.status === 'ready');
+  if (ticket.status !== 'ready') {
+    stopBeeping();
+    document.body.classList.remove('flash-ready');
+  }
   if (ticket.status === 'waiting') {
     const almost = ticket.ahead > 0 && ticket.ahead <= (ticket.notify_ahead ?? 2);
-    $('ticketStatus').textContent = almost ? t('status_almost') : t('status_waiting');
+    $('ticketStatus').textContent = t(almost ? 'status_almost' : 'status_waiting');
     $('ticketStatus').classList.add('pulse');
     $('ticketSub').textContent = ticket.name || '';
     $('statsRow').classList.remove('hidden');
+    $('leaveBtn').classList.remove('hidden');
     $('aheadNum').textContent = ticket.ahead;
     $('totalNum').textContent = ticket.waiting_total;
     $('estNum').textContent = ticket.est_minutes;
     if (almost) alertAlmost(ticket);
-  } else if (ticket.status === 'ready') {
-    $('ticketStatus').textContent = t('status_ready');
-    $('ticketStatus').classList.remove('pulse');
-    $('ticketSub').textContent = t('status_ready_sub');
-    $('statsRow').classList.add('hidden');
-  } else if (ticket.status === 'done') {
-    $('ticketStatus').textContent = t('status_done');
-    $('ticketStatus').classList.remove('pulse');
-    $('ticketSub').textContent = '';
-    $('statsRow').classList.add('hidden');
-    $('leaveBtn').classList.add('hidden');
   } else {
-    $('ticketStatus').textContent = t('status_cancelled');
-    $('ticketSub').textContent = '';
+    $('ticketStatus').classList.remove('pulse');
     $('statsRow').classList.add('hidden');
-    $('leaveBtn').classList.add('hidden');
+    if (ticket.status === 'ready') {
+      $('ticketStatus').textContent = t('status_ready');
+      $('ticketSub').textContent = t('status_ready_sub');
+      $('leaveBtn').classList.remove('hidden');
+      // Also alert on first load if it is already ready.
+      alertReady(ticket);
+    } else {
+      $('ticketStatus').textContent = t(ticket.status === 'done' ? 'status_done' : 'status_cancelled');
+      $('ticketSub').textContent = '';
+      $('leaveBtn').classList.add('hidden');
+    }
   }
-
-  if (ticket.status === 'ready' && lastStatus === 'waiting') alertReady(ticket);
-  lastStatus = ticket.status;
 }
-
 async function poll() {
+  if (polling) return;
+  polling = true;
   try {
     const data = await api(BASE + '/ticket/' + ticketId);
     render(data.ticket);
-    if (['done', 'cancelled'].includes(data.ticket.status)) {
-      localStorage.removeItem(TKEY);
-    }
-  } catch {
-    // Ticket weg oder Server kurz nicht da – beim nächsten Poll erneut versuchen
-  }
+    $('connectionHint').textContent = '';
+    if (['done', 'cancelled'].includes(data.ticket.status)) localStorage.removeItem(TKEY);
+  } catch { $('connectionHint').textContent = t('connection_lost'); }
+  finally { polling = false; }
 }
-
+$('soundBtn').onclick = () => enableSound(true);
 $('notifyBtn').onclick = async () => {
-  if (!('Notification' in window)) { $('notifyBtn').textContent = 'Not supported'; return; }
-  const p = await Notification.requestPermission();
-  if (p === 'granted') $('notifyBtn').textContent = t('notify_on');
+  const sound = enableSound(false);
+  try {
+    if ('Notification' in window) await Notification.requestPermission();
+  } catch { notificationFailed = true; }
+  await sound;
+  updateSoundControls();
 };
-
 $('leaveBtn').onclick = async () => {
-  try { await api(`${BASE}/ticket/${ticketId}/cancel`, { method: 'POST' }); } catch { /* egal */ }
+  try { await api(`${BASE}/ticket/${ticketId}/cancel`, { method: 'POST' }); } catch { /* retry via own ticket */ return; }
   localStorage.removeItem(TKEY);
   location.href = '/b/' + SLUG;
 };
-
-// Sprache wechseln → Inhalte neu zeichnen
 const origSetLang = setLang;
-setLang = (lang) => { origSetLang(lang); lastStatus = null; poll(); };
-
+setLang = (lang) => {
+  origSetLang(lang);
+  updateSoundControls();
+  if (currentTicket) render(currentTicket);
+  poll();
+};
+updateSoundControls();
 poll();
 setInterval(poll, 3000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
-
-// Logo einmalig laden (404 -> ausgeblendet lassen)
-api(BASE + '/settings').then((d) => {
-  if (d.has_logo) {
-    const logo = $('venueLogo');
-    logo.src = BASE + '/logo';
-    logo.classList.remove('hidden');
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { stopBeeping(); readyShown = false; }
+  else { updateSoundControls(); poll(); }
+});
+window.addEventListener('pageshow', () => { updateSoundControls(); poll(); });
+api(BASE + '/settings').then((data) => {
+  if (data.has_logo) {
+    $('venueLogo').src = BASE + '/logo';
+    $('venueLogo').classList.remove('hidden');
   }
 }).catch(() => {});

@@ -145,6 +145,7 @@ Einrichtung, benötigte Schlüssel, Grenzen und ausstehende Sandbox-Abnahme:
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) – Live-Setup und belegter EU-Release-Pfad
 - [docs/PILOT-CHECKLIST.md](docs/PILOT-CHECKLIST.md) – offenes Gate vor echten Gästen: Betreiberangaben und Handy-Benachrichtigungen
 - [docs/API.md](docs/API.md) – REST-API-Referenz
+- [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md) – Ton aktivieren, Alarmgrenzen und weitere Optionen
 - [docs/BILLING.md](docs/BILLING.md) – Abo-Zahlungen und Anbieter-Einrichtung
 - [docs/LOAD-TEST.md](docs/LOAD-TEST.md) – gemessener Lasttest mit 10/50/100 parallelen Abläufen
 - [CHANGELOG.md](CHANGELOG.md) – Änderungshistorie
