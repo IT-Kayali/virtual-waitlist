@@ -25,12 +25,100 @@
 </div>
 
 <!-- Admin-Dashboard -->
-<div class="staff-wrap hidden" id="dashWrap">
+<div class="staff-wrap hidden" id="dashWrap" style="max-width:980px">
   <div class="staff-head">
-    <h1>Alle Geschäfte <span class="muted" id="bizCount"></span></h1>
+    <h1>Plattform-Verwaltung</h1>
     <button class="btn ghost small" id="logoutBtn">Ausloggen</button>
   </div>
-  <div id="bizList"></div>
+
+  <div class="adm-tabs">
+    <button class="adm-tab active" data-tab="biz">Geschäfte <span class="muted" id="bizCount"></span></button>
+    <button class="adm-tab" data-tab="inquiries">Anfragen <span class="adm-badge hidden" id="inqBadge"></span></button>
+    <button class="adm-tab" data-tab="plans">Abo-Modelle</button>
+    <button class="adm-tab" data-tab="subs">Abos</button>
+    <button class="adm-tab" data-tab="content">Webseiten-Inhalte</button>
+  </div>
+
+  <!-- Tab: Geschäfte -->
+  <div id="tab-biz" class="adm-panel">
+    <div id="bizList"></div>
+  </div>
+
+  <!-- Tab: Anfragen -->
+  <div id="tab-inquiries" class="adm-panel hidden">
+    <div class="adm-filter">
+      <button class="btn ghost small adm-f active" data-f="">Alle</button>
+      <button class="btn ghost small adm-f" data-f="neu">Neu</button>
+      <button class="btn ghost small adm-f" data-f="in_bearbeitung">In Bearbeitung</button>
+      <button class="btn ghost small adm-f" data-f="erledigt">Erledigt</button>
+    </div>
+    <div id="inqList"></div>
+  </div>
+
+  <!-- Tab: Abo-Modelle -->
+  <div id="tab-plans" class="adm-panel hidden">
+    <div id="planList"></div>
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin-bottom:8px">Neues Abo-Modell</h3>
+      <div class="adm-form">
+        <input type="text" id="npName" placeholder="Name, z. B. Pro">
+        <input type="text" id="npDesc" placeholder="Kurzbeschreibung">
+        <div class="adm-row">
+          <input type="number" id="npPrice" min="0" step="0.01" placeholder="Preis in € (0 = kostenlos)">
+          <input type="text" id="npInterval" placeholder="Intervall, z. B. Monat" value="Monat">
+          <input type="number" id="npSort" step="1" placeholder="Reihenfolge">
+        </div>
+        <textarea id="npFeatures" rows="4" placeholder="Leistungen – eine pro Zeile"></textarea>
+        <label class="adm-check"><input type="checkbox" id="npHighlight"> Als „Beliebt“ hervorheben</label>
+        <button class="btn primary" id="npCreate">Abo-Modell anlegen</button>
+        <p class="error" id="npError"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Abos -->
+  <div id="tab-subs" class="adm-panel hidden">
+    <div id="subList"></div>
+  </div>
+
+  <!-- Tab: Inhalte -->
+  <div id="tab-content" class="adm-panel hidden">
+    <div class="card">
+      <h3 style="margin-bottom:4px">Startseite</h3>
+      <label>Überschrift (Hero)</label>
+      <input type="text" id="c_hero_title">
+      <label>Untertitel (Hero)</label>
+      <textarea id="c_hero_sub" rows="3"></textarea>
+      <label>Kontakt-E-Mail (öffentlich)</label>
+      <input type="text" id="c_contact_email">
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin-bottom:4px">Impressum &amp; Datenschutz</h3>
+      <p class="muted" style="font-size:0.9rem">Diese Angaben erscheinen auf /impressum und /datenschutz.</p>
+      <label>Name / Firma</label>
+      <input type="text" id="c_impressum_name">
+      <label>Straße und Hausnummer</label>
+      <input type="text" id="c_impressum_street">
+      <label>PLZ und Ort</label>
+      <input type="text" id="c_impressum_city">
+      <label>E-Mail (Impressum)</label>
+      <input type="text" id="c_impressum_email">
+      <label>Telefon</label>
+      <input type="text" id="c_impressum_phone">
+      <label>Verantwortlich i. S. d. § 18 Abs. 2 MStV</label>
+      <input type="text" id="c_impressum_verantwortlich">
+      <label>Stand der Datenschutzerklärung</label>
+      <input type="text" id="c_datenschutz_stand">
+      <div style="margin-top:16px">
+        <button class="btn primary" id="contentSave">Inhalte speichern</button>
+        <span class="muted" id="contentSaved" style="margin-left:10px"></span>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin-bottom:8px">Zahlungsanbieter (Status)</h3>
+      <div id="configStatus" class="muted">…</div>
+    </div>
+  </div>
 </div>
 
 <script src="/admin.js"></script>

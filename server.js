@@ -103,6 +103,49 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
   token TEXT PRIMARY KEY,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS inquiries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL DEFAULT 'allgemein',      -- allgemein | demo | vertrieb
+  name TEXT NOT NULL,
+  business_name TEXT NOT NULL DEFAULT '',
+  email TEXT NOT NULL,
+  phone TEXT NOT NULL DEFAULT '',
+  message TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'neu',          -- neu | in_bearbeitung | erledigt
+  note TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  handled_at TEXT
+);
+CREATE TABLE IF NOT EXISTS plans (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  price_cents INTEGER NOT NULL DEFAULT 0,
+  currency TEXT NOT NULL DEFAULT 'EUR',
+  interval_text TEXT NOT NULL DEFAULT 'Monat',
+  features TEXT NOT NULL DEFAULT '',           -- ein Feature pro Zeile
+  highlighted INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  stripe_price_id TEXT NOT NULL DEFAULT '',
+  paypal_plan_id TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS site_content (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  business_id INTEGER NOT NULL REFERENCES businesses(id),
+  plan_id INTEGER NOT NULL REFERENCES plans(id),
+  provider TEXT NOT NULL DEFAULT 'manual',     -- stripe | paypal | manual
+  provider_ref TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'pending',      -- pending | active | cancelled | past_due
+  current_period_end TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 `);
 
 const ENTRIES_DDL = `
@@ -178,6 +221,34 @@ if (!db.prepare("SELECT 1 FROM pragma_table_info('businesses') WHERE name='notif
 }
 if (!db.prepare("SELECT 1 FROM pragma_table_info('businesses') WHERE name='active'").get()) {
   db.exec('ALTER TABLE businesses ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
+}
+
+// Standard-Abo-Modelle (vom Plattform-Admin im /admin-Bereich aenderbar)
+if (!db.prepare('SELECT id FROM plans LIMIT 1').get()) {
+  const ins = db.prepare(`INSERT INTO plans (slug, name, description, price_cents, interval_text, features, highlighted, sort_order)
+    VALUES (?,?,?,?,?,?,?,?)`);
+  ins.run('starter', 'Starter', 'Zum Ausprobieren und fuer kleine Betriebe', 0, 'Monat',
+    '1 Warteschlange\nQR-Code & persoenlicher Link\nLive-Dashboard\nGaeste-Ansicht DE/EN/AR\nDSGVO-konform, Server in der EU', 0, 1);
+  ins.run('pro', 'Pro', 'Fuer Cafes und Restaurants im Alltag', 1900, 'Monat',
+    'Alles aus Starter\nMitarbeiter-Konten mit eigenen PINs\nKiosk-Modus fuer den Tresen\nReports & Mitarbeiter-Statistiken\nEigenes Logo\nPrioritaets-Support', 1, 2);
+  ins.run('business', 'Business', 'Fuer groessere Betriebe und Ketten', 4900, 'Monat',
+    'Alles aus Pro\nMehrere Standorte (in Vorbereitung)\nPersoenliche Einrichtung\nTelefon-Support', 0, 3);
+  console.log('Standard-Abo-Modelle angelegt (Starter/Pro/Business).');
+}
+
+// Standard-Inhalte der oeffentlichen Webseite (vom Plattform-Admin aenderbar)
+{
+  const ins = db.prepare('INSERT OR IGNORE INTO site_content (key, value) VALUES (?,?)');
+  ins.run('hero_title', 'Schluss mit Warteschlangen vor der Tuer.');
+  ins.run('hero_sub', 'QueueUp ist die digitale Warteliste fuer Cafes, Restaurants und Praxen: Ihre Gaeste reihen sich per QR-Code oder Link ein - ganz ohne App - und sehen live, wann sie an der Reihe sind.');
+  ins.run('contact_email', 'kontakt@queueup.app');
+  ins.run('impressum_name', '');
+  ins.run('impressum_street', '');
+  ins.run('impressum_city', '');
+  ins.run('impressum_email', '');
+  ins.run('impressum_phone', '');
+  ins.run('impressum_verantwortlich', '');
+  ins.run('datenschutz_stand', 'November 2026');
 }
 
 const LOGO_MIME = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml' };
@@ -625,6 +696,143 @@ function cleanupOldData() {
 cleanupOldData();
 setInterval(cleanupOldData, 60 * 60 * 1000).unref();
 
+
+// ---------- Oeffentliche Webseite ----------
+const INQUIRY_TYPES = new Set(['allgemein', 'demo', 'vertrieb']);
+const INQUIRY_STATUS = new Set(['neu', 'in_bearbeitung', 'erledigt']);
+
+// Anfrage vom Kontaktformular entgegennehmen
+route('POST', '/api/public/inquiry', async (req, res) => {
+  const b = await readBody(req);
+  const name = String(b.name || '').trim().slice(0, 80);
+  const email = String(b.email || '').toLowerCase().trim().slice(0, 120);
+  const message = String(b.message || '').trim().slice(0, 2000);
+  const type = INQUIRY_TYPES.has(b.type) ? b.type : 'allgemein';
+  if (!name || !email.includes('@') || !message) {
+    return send(res, 400, { error: 'Bitte Name, gueltige E-Mail und Nachricht ausfuellen.' });
+  }
+  db.prepare(`INSERT INTO inquiries (type, name, business_name, email, phone, message)
+    VALUES (?,?,?,?,?,?)`).run(type, name, String(b.business_name || '').trim().slice(0, 80),
+    email, String(b.phone || '').trim().slice(0, 40), message);
+  return send(res, 201, { ok: true });
+});
+
+// Aktive Abo-Modelle (oeffentlich, ohne interne Anbieter-IDs)
+route('GET', '/api/public/plans', async (req, res) => {
+  const plans = db.prepare(`SELECT slug, name, description, price_cents, currency, interval_text, features, highlighted
+    FROM plans WHERE active = 1 ORDER BY sort_order, id`).all();
+  return send(res, 200, { plans });
+});
+
+// Pflegbare Inhalte der Webseite (oeffentlich)
+route('GET', '/api/public/content', async (req, res) => {
+  const out = {};
+  for (const r of db.prepare('SELECT key, value FROM site_content').all()) out[r.key] = r.value;
+  return send(res, 200, out);
+});
+
+// ---------- Plattform-Admin: Anfragen ----------
+route('GET', '/api/admin/inquiries', async (req, res) => {
+  const inquiries = db.prepare('SELECT * FROM inquiries ORDER BY id DESC LIMIT 500').all();
+  const counts = { neu: 0, in_bearbeitung: 0, erledigt: 0 };
+  for (const i of inquiries) counts[i.status] = (counts[i.status] || 0) + 1;
+  return send(res, 200, { inquiries, counts, total: inquiries.length });
+}, { admin: true });
+
+route('POST', '/api/admin/inquiry/:id/status', async (req, res, _u, p) => {
+  const inq = db.prepare('SELECT * FROM inquiries WHERE id = ?').get(Number(p.id));
+  if (!inq) return send(res, 404, { error: 'Anfrage nicht gefunden.' });
+  const b = await readBody(req);
+  const status = INQUIRY_STATUS.has(b.status) ? b.status : inq.status;
+  const note = b.note !== undefined ? String(b.note).slice(0, 1000) : inq.note;
+  db.prepare(`UPDATE inquiries SET status = ?, note = ?,
+    handled_at = CASE WHEN ? = 'neu' THEN NULL ELSE COALESCE(handled_at, datetime('now')) END
+    WHERE id = ?`).run(status, note, status, inq.id);
+  return send(res, 200, { ok: true });
+}, { admin: true });
+
+// ---------- Plattform-Admin: Abo-Modelle ----------
+route('GET', '/api/admin/plans', async (req, res) => {
+  const plans = db.prepare('SELECT * FROM plans ORDER BY sort_order, id').all();
+  return send(res, 200, { plans });
+}, { admin: true });
+
+route('POST', '/api/admin/plans', async (req, res) => {
+  const b = await readBody(req);
+  const name = String(b.name || '').trim().slice(0, 60);
+  if (!name) return send(res, 400, { error: 'Name fehlt.' });
+  let slug = String(b.slug || slugify(name)).slice(0, 40) || 'plan';
+  for (let i = 2; db.prepare('SELECT id FROM plans WHERE slug = ?').get(slug); i++) slug = `${slug.slice(0, 36)}-${i}`;
+  const info = db.prepare(`INSERT INTO plans (slug, name, description, price_cents, currency, interval_text, features, highlighted, active, sort_order, stripe_price_id, paypal_plan_id)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    slug, name, String(b.description || '').slice(0, 200),
+    Math.max(0, Math.round(Number(b.price_cents) || 0)),
+    String(b.currency || 'EUR').slice(0, 3).toUpperCase(),
+    String(b.interval_text || 'Monat').slice(0, 30),
+    String(b.features || '').slice(0, 2000),
+    b.highlighted ? 1 : 0, b.active === false ? 0 : 1,
+    Math.round(Number(b.sort_order) || 0),
+    String(b.stripe_price_id || '').trim().slice(0, 80),
+    String(b.paypal_plan_id || '').trim().slice(0, 80));
+  return send(res, 201, { ok: true, id: Number(info.lastInsertRowid), slug });
+}, { admin: true });
+
+route('POST', '/api/admin/plan/:id', async (req, res, _u, p) => {
+  const plan = db.prepare('SELECT * FROM plans WHERE id = ?').get(Number(p.id));
+  if (!plan) return send(res, 404, { error: 'Abo-Modell nicht gefunden.' });
+  const b = await readBody(req);
+  db.prepare(`UPDATE plans SET name=?, description=?, price_cents=?, currency=?, interval_text=?,
+    features=?, highlighted=?, active=?, sort_order=?, stripe_price_id=?, paypal_plan_id=? WHERE id=?`).run(
+    String(b.name ?? plan.name).trim().slice(0, 60) || plan.name,
+    String(b.description ?? plan.description).slice(0, 200),
+    Math.max(0, Math.round(Number(b.price_cents ?? plan.price_cents) || 0)),
+    String(b.currency ?? plan.currency).slice(0, 3).toUpperCase(),
+    String(b.interval_text ?? plan.interval_text).slice(0, 30),
+    String(b.features ?? plan.features).slice(0, 2000),
+    b.highlighted === undefined ? plan.highlighted : (b.highlighted ? 1 : 0),
+    b.active === undefined ? plan.active : (b.active ? 1 : 0),
+    b.sort_order === undefined ? plan.sort_order : Math.round(Number(b.sort_order) || 0),
+    String(b.stripe_price_id ?? plan.stripe_price_id).trim().slice(0, 80),
+    String(b.paypal_plan_id ?? plan.paypal_plan_id).trim().slice(0, 80),
+    plan.id);
+  return send(res, 200, { ok: true });
+}, { admin: true });
+
+// ---------- Plattform-Admin: Inhalte ----------
+route('GET', '/api/admin/content', async (req, res) => {
+  const out = {};
+  for (const r of db.prepare('SELECT key, value FROM site_content').all()) out[r.key] = r.value;
+  return send(res, 200, { content: out });
+}, { admin: true });
+
+route('POST', '/api/admin/content', async (req, res) => {
+  const b = await readBody(req);
+  const entries = b.entries && typeof b.entries === 'object' ? b.entries : {};
+  const up = db.prepare(`INSERT INTO site_content (key, value) VALUES (?,?)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value`);
+  for (const [k, v] of Object.entries(entries)) {
+    if (!/^[a-z0-9_]{1,60}$/.test(k)) continue;
+    up.run(k, String(v).slice(0, 4000));
+  }
+  return send(res, 200, { ok: true });
+}, { admin: true });
+
+// Konfigurationsstatus der Zahlungsanbieter (keine Werte, nur ob gesetzt)
+route('GET', '/api/admin/config', async (req, res) => {
+  return send(res, 200, {
+    stripe: { secret_key: !!process.env.STRIPE_SECRET_KEY, publishable_key: !!process.env.STRIPE_PUBLISHABLE_KEY, webhook_secret: !!process.env.STRIPE_WEBHOOK_SECRET },
+    paypal: { client_id: !!process.env.PAYPAL_CLIENT_ID, client_secret: !!process.env.PAYPAL_CLIENT_SECRET, env: process.env.PAYPAL_ENV || 'sandbox' },
+  });
+}, { admin: true });
+
+// ---------- Plattform-Admin: Abos ----------
+route('GET', '/api/admin/subscriptions', async (req, res) => {
+  const subs = db.prepare(`SELECT s.*, b.name AS business_name, b.slug, p.name AS plan_name
+    FROM subscriptions s JOIN businesses b ON b.id = s.business_id JOIN plans p ON p.id = s.plan_id
+    ORDER BY s.id DESC LIMIT 500`).all();
+  return send(res, 200, { subscriptions: subs });
+}, { admin: true });
+
 // ---------- Server ----------
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -674,15 +882,25 @@ const server = http.createServer(async (req, res) => {
       return res.end();
     }
     if (pathname === '/staff') {
-      res.writeHead(302, { Location: '/' });
+      res.writeHead(302, { Location: '/anmelden' });
       return res.end();
     }
 
     // Seiten-Routing
     let file = pathname;
     const bizPage = pathname.match(/^\/b\/([^/]+)(\/(ticket|staff|kiosk|privacy))?\/?$/);
-    if (pathname === '/' || pathname === '/privacy' || pathname === '/admin') {
-      file = pathname === '/' ? '/landing.html' : pathname === '/admin' ? '/admin.html' : '/privacy.html';
+    const pageMap = {
+      '/': '/home.html',
+      '/anmelden': '/landing.html',
+      '/preise': '/pricing.html',
+      '/kontakt': '/contact.html',
+      '/impressum': '/impressum.html',
+      '/datenschutz': '/datenschutz.html',
+      '/privacy': '/privacy.html',
+      '/admin': '/admin.html',
+    };
+    if (pageMap[pathname]) {
+      file = pageMap[pathname];
     } else if (bizPage) {
       file = bizPage[3] === 'ticket' ? '/ticket.html'
         : bizPage[3] === 'staff' ? '/staff.html'

@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.4.0 – 22.11.2026
+
+**Professionelle öffentliche Webseite + Anfragen- und Abo-Verwaltung im Admin-Bereich.**
+
+- Neue öffentliche Seiten (Deutsch): `/` (Startseite mit Produktpitch,
+  Live-Demo-Verweis und Funktionsübersicht), `/preise` (Abo-Modelle aus der
+  Datenbank), `/kontakt` (Kontakt-/Anfrageformular mit Anliegen-Typ),
+  `/impressum` und `/datenschutz` (DSGVO, Platzhalter bis zur finalen Angabe).
+- Registrierung/Login für Geschäfte jetzt unter `/anmelden` (die alte
+  `/staff`-Umleitung zeigt dorthin).
+- Kontaktanfragen landen in der neuen `inquiries`-Tabelle und im
+  Admin-Bereich: einsehen, filtern, Status (neu/in Bearbeitung/erledigt),
+  Antwort-Link per E-Mail, Badge für neue Anfragen.
+- Admin-Bereich mit Tabs: Geschäfte, Anfragen, Abo-Modelle (anlegen,
+  bearbeiten, aktivieren/deaktivieren, „Beliebt“, Stripe-Price-ID,
+  PayPal-Plan-ID), Abos, Webseiten-Inhalte (Hero, Kontakt-E-Mail, Impressum,
+  Datenschutz-Stand) und Status der Zahlungsanbieter-Konfiguration.
+- Neue Tabellen: `inquiries`, `plans` (mit Standard-Tarifen Starter 0 €,
+  Pro 19 €, Business 49 € – änderbar), `site_content`, `subscriptions`
+  (für die Bezahl-Integration vorbereitet).
+- Öffentliche APIs: `POST /api/public/inquiry`, `GET /api/public/plans`,
+  `GET /api/public/content`. Stripe-/PayPal-Checkout folgt in 0.5.0
+  (Umgebungsvariablen siehe `/api/admin/config`).
+
 ## 0.3.0 – 22.11.2026
 
 **Plattform-Admin (SaaS-Inhaber-Bereich).**

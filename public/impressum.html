@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Impressum – QueueUp</title>
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="site-nav-inner">
+    <a class="site-logo" href="/">Queue<span>Up</span></a>
+    <div class="site-nav-links">
+      <a href="/">Start</a>
+      <a href="/preise">Preise</a>
+      <a href="/kontakt">Kontakt</a>
+      <a href="/b/demo">Live-Demo</a>
+      <a href="/anmelden" class="btn-nav">Anmelden</a>
+    </div>
+  </div>
+</nav>
+
+<main class="site-main">
+  <div class="legal">
+    <h1>Impressum</h1>
+
+    <div class="placeholder-note">
+      Hinweis: Diese Angaben werden derzeit vervollständigt (Platzhalter gemäß Einrichtung).
+      Der Betreiber kann sie jederzeit im Admin-Bereich pflegen.
+    </div>
+
+    <h2>Angaben gemäß § 5 TMG / DDG</h2>
+    <address>
+      <strong data-content="impressum_name">[Name / Firma]</strong><br>
+      <span data-content="impressum_street">[Straße und Hausnummer]</span><br>
+      <span data-content="impressum_city">[PLZ und Ort]</span>
+    </address>
+
+    <h2>Kontakt</h2>
+    <p>
+      E-Mail: <a id="impMail" href="mailto:kontakt@queueup.app" data-content="impressum_email">kontakt@queueup.app</a><br>
+      Telefon: <span data-content="impressum_phone">[Telefonnummer]</span>
+    </p>
+
+    <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+    <p data-content="impressum_verantwortlich">[Name, Anschrift wie oben]</p>
+
+    <h2>Haftung für Inhalte</h2>
+    <p>Die Inhalte dieser Seiten wurden mit Sorgfalt erstellt. Für die Richtigkeit,
+    Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr
+    übernehmen. Als Diensteanbieter sind wir für eigene Inhalte auf diesen Seiten
+    nach den allgemeinen Gesetzen verantwortlich.</p>
+
+    <h2>Haftung für Links</h2>
+    <p>Diese Website enthält Links zu externen Websites Dritter, auf deren Inhalte
+    wir keinen Einfluss haben. Für die Inhalte der verlinkten Seiten ist stets der
+    jeweilige Anbieter oder Betreiber der Seiten verantwortlich.</p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div>© <span id="year"></span> QueueUp</div>
+    <div>
+      <a href="/preise">Preise</a>
+      <a href="/kontakt">Kontakt</a>
+      <a href="/impressum">Impressum</a>
+      <a href="/datenschutz">Datenschutz</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/site.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const c = await loadSiteContent();
+  if (c.impressum_email) document.getElementById('impMail').href = 'mailto:' + c.impressum_email;
+  const filled = c.impressum_name && c.impressum_street && c.impressum_city;
+  if (filled) document.querySelector('.placeholder-note').classList.add('hidden');
+});
+</script>
+</body>
+</html>

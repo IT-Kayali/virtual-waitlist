@@ -15,6 +15,14 @@ an genau ein Geschäft gebunden) · Inhaber (E-Mail + Passwort, `kind=owner`).
 | POST | `/api/logout` | Session beenden. |
 | GET | `/api/me` | Aktuelle Session: `{"slug","name","email","kind","employee"}`. `kind`: `pin` \| `owner` \| `employee`. |
 
+## Öffentliche Webseite
+
+| Methode | Pfad | Zweck |
+| --- | --- | --- |
+| POST | `/api/public/inquiry` | Anfrage vom Kontaktformular (`type`: `allgemein`/`demo`/`vertrieb`, `name`, `email`, `message` Pflicht; `business_name`, `phone` optional) |
+| GET | `/api/public/plans` | Aktive Abo-Modelle (ohne interne Anbieter-IDs) |
+| GET | `/api/public/content` | Pflegbare Webseiten-Inhalte (`site_content`) |
+
 ## Gäste (pro Geschäft)
 
 | Methode | Pfad | Zweck |
@@ -48,6 +56,20 @@ an genau ein Geschäft gebunden) · Inhaber (E-Mail + Passwort, `kind=owner`).
 | POST | `/api/admin/business/:id/active` | Sperren/Entsperren. Body: `{"active": true|false}`. Beim Sperren werden alle Sessions des Geschäfts gelöscht; Kunden- und Personal-Endpunkte liefern danach 404. |
 
 Seite: `/admin` (deutsch).
+
+### Admin: Anfragen, Abo-Modelle, Inhalte (alle mit Admin-Session)
+
+| Methode | Pfad | Zweck |
+| --- | --- | --- |
+| GET | `/api/admin/inquiries` | Alle Anfragen (neueste zuerst, inkl. Zähler je Status) |
+| POST | `/api/admin/inquiry/:id/status` | Status (`neu`/`in_bearbeitung`/`erledigt`) und Notiz setzen |
+| GET | `/api/admin/plans` | Alle Abo-Modelle (auch inaktive) |
+| POST | `/api/admin/plans` | Abo-Modell anlegen (Slug wird automatisch eindeutig) |
+| POST | `/api/admin/plan/:id` | Abo-Modell ändern (Preis in Cent, Features, `active`, `highlighted`, `stripe_price_id`, `paypal_plan_id` u. a.) |
+| GET | `/api/admin/subscriptions` | Abgeschlossene Abos (mit Geschäfts- und Tarifname) |
+| GET | `/api/admin/content` | Webseiten-Inhalte lesen |
+| POST | `/api/admin/content` | Inhalte speichern (`entries`: Schlüssel/Wert) |
+| GET | `/api/admin/config` | Konfigurationsstatus Stripe/PayPal (nur gesetzt ja/nein) |
 
 ## Inhaber: Mitarbeiter & Reports
 
@@ -102,6 +124,11 @@ Seite: `/admin` (deutsch).
 
 Alle Passwörter/PINs werden mit scrypt + Zufalls-Salt gehasht.
 Gäste-Daten werden automatisch gelöscht (siehe README, DSGVO).
+
+Zusätzlich ab 0.4.0: `inquiries` (Kontaktanfragen), `plans` (Abo-Modelle
+inkl. `stripe_price_id`/`paypal_plan_id`), `site_content` (pflegbare
+Webseiten-Inhalte), `subscriptions` (abgeschlossene Abos, `provider`:
+stripe/paypal/manual, `status`: pending/active/cancelled/past_due).
 
 ## Migration von 0.1.x
 

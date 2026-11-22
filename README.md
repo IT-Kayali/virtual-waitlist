@@ -41,6 +41,15 @@ strikt getrennt von allen anderen.
 - Live-Ansicht der Warteschlange und Abholliste, **Ready 🔔** pro Eintrag,
   manuell Bestellungen hinzufügen (z. B. Telefon), Tages-Statistiken.
 
+### Öffentliche Webseite (Marketing, Kontakt, Preise)
+
+Die Startseite `/` ist eine professionelle öffentliche Webseite (Deutsch):
+Produktpitch mit Live-Demo-Verweis, `/preise` (Abo-Modelle aus der Datenbank,
+im Admin-Bereich pflegbar), `/kontakt` (Kontakt- und Anfrageformular –
+Anfragen landen im Admin-Bereich), `/impressum` und `/datenschutz`
+(Inhalte im Admin-Bereich pflegbar, Platzhalter bis zur finalen Angabe).
+Registrierung und Login für Geschäfte liegen unter `/anmelden`.
+
 ### Für den Plattform-Betreiber (SaaS-Inhaber)
 
 - Admin-Bereich unter **`/admin`** (Login mit E-Mail + Passwort aus den
@@ -51,6 +60,15 @@ strikt getrennt von allen anderen.
 - **Sperren/Entsperren** pro Geschäft: Ein gesperrtes Geschäft ist sofort
   komplett offline (Kundenseite, Ticket-APIs, Personal-Login; laufende
   Sessions werden beendet), bis es wieder entsperrt wird.
+- **Anfragen** aus dem Kontaktformular: einsehen, filtern, Status setzen
+  (neu/in Bearbeitung/erledigt), Badge für neue Anfragen.
+- **Abo-Modelle** verwalten: anlegen/bearbeiten (Preis, Leistungen,
+  Sortierung, „Beliebt“, Stripe-Price-ID, PayPal-Plan-ID), aktivieren/
+  deaktivieren. Änderungen sind sofort auf `/preise` sichtbar.
+- **Abos** einsehen (Geschäft, Tarif, Anbieter, Status, Laufzeit).
+- **Webseiten-Inhalte** pflegen: Hero-Texte, Kontakt-E-Mail, Impressum,
+  Stand der Datenschutzerklärung – plus Status der Zahlungsanbieter-
+  Konfiguration (Stripe/PayPal, aus Umgebungsvariablen).
 
 ### Für Gäste
 

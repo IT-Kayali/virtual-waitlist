@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Preise &amp; Abos – QueueUp</title>
+<meta name="description" content="QueueUp Abo-Modelle: Wählen Sie das passende Paket für Ihr Geschäft. Monatlich kündbar, DSGVO-konform.">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="site-nav-inner">
+    <a class="site-logo" href="/">Queue<span>Up</span></a>
+    <div class="site-nav-links">
+      <a href="/">Start</a>
+      <a href="/preise">Preise</a>
+      <a href="/kontakt">Kontakt</a>
+      <a href="/b/demo">Live-Demo</a>
+      <a href="/anmelden" class="btn-nav">Anmelden</a>
+    </div>
+  </div>
+</nav>
+
+<main class="site-main">
+  <section class="site-section">
+    <h2>Abo-Modelle</h2>
+    <p class="section-sub">Transparent und fair: Wählen Sie das Paket, das zu Ihrem Geschäft passt. Alle Preise verstehen sich inkl. MwSt., monatlich kündbar.</p>
+    <div class="price-grid" id="planGrid">
+      <p class="muted" style="text-align:center">Tarife werden geladen …</p>
+    </div>
+    <p class="price-note">Fragen zu den Paketen oder Wunsch nach einer persönlichen Einrichtung? <a href="/kontakt">Kontaktieren Sie uns</a> – wir melden uns innerhalb von 24 Stunden.</p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div>© <span id="year"></span> QueueUp</div>
+    <div>
+      <a href="/preise">Preise</a>
+      <a href="/kontakt">Kontakt</a>
+      <a href="/impressum">Impressum</a>
+      <a href="/datenschutz">Datenschutz</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/site.js"></script>
+<script>
+function priceText(p) {
+  if (!p.price_cents) return 'Kostenlos';
+  return (p.price_cents / 100).toLocaleString('de-DE', { style: 'currency', currency: p.currency || 'EUR' });
+}
+function planCard(p) {
+  const feats = (p.features || '').split('\n').map((f) => f.trim()).filter(Boolean)
+    .map((f) => '<li>' + esc(f) + '</li>').join('');
+  const ribbon = p.highlighted ? '<div class="ribbon">Beliebt</div>' : '';
+  const interval = p.interval_text ? '<small> / ' + esc(p.interval_text) + '</small>' : '';
+  return '<div class="price-card' + (p.highlighted ? ' highlight' : '') + '">'
+    + ribbon
+    + '<h3>' + esc(p.name) + '</h3>'
+    + (p.description ? '<p class="p-desc">' + esc(p.description) + '</p>' : '')
+    + '<div class="p-price">' + priceText(p) + interval + '</div>'
+    + '<ul>' + feats + '</ul>'
+    + '<a class="btn primary full" href="/anmelden?plan=' + encodeURIComponent(p.slug) + '">Jetzt starten</a>'
+    + '</div>';
+}
+siteApi('/api/public/plans').then((d) => {
+  document.getElementById('planGrid').innerHTML = d.plans.map(planCard).join('');
+}).catch(() => {
+  document.getElementById('planGrid').innerHTML =
+    '<p style="text-align:center;color:var(--danger)">Tarife konnten nicht geladen werden. Bitte später erneut versuchen.</p>';
+});
+</script>
+</body>
+</html>
