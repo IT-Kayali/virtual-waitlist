@@ -4,7 +4,10 @@ Ab Codeversion v0.6.0 ist optionales PWA/Web Push beauftragt und implementiert.
 Aktueller Produktivstand: [DEPLOYMENT.md](DEPLOYMENT.md). Einrichtung,
 Besitznachweis, Datenschutz und verbleibende Abnahme: [WEB-PUSH.md](WEB-PUSH.md).
 Die folgenden In-Page-Regeln gelten weiter, insbesondere für alte Tickets
-und ohne aktivierten Push.
+und ohne aktivierten Push. Ab v0.7.0 kommen persönlicher Counter-Beleg mit QR
+und Abholcode, höchstens drei geplante Push-Hinweise sowie versionsgebundene
+Bestätigung hinzu. Android verwendet weiter seinen Systemton, keinen eigenen
+Web-Push-Alarmton. Einzelheiten und Geräte-Grenzen stehen in WEB-PUSH.md.
 
 ## Gastablauf
 

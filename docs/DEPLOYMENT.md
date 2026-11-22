@@ -1,6 +1,7 @@
 # Deployment und EU-Release-Pfad
 
-Stand: 22.11.2026, Anwendung v0.6.0. Die App läuft als einzelner Node-Prozess
+Stand: 22.11.2026, Code v0.7.0. Der unten belegte letzte Produktiv-Release bleibt
+bis zur nächsten bestätigten Abnahme v0.6.0. Die App läuft als einzelner Node-Prozess
 mit SQLite und einem persistenten Volume auf Railway.
 
 ## Aktuelles Setup
@@ -193,6 +194,21 @@ Produktivabnahme. Der letzte bestätigte Live-Release steht weiter oben.
   Nummer/Status funktionieren weiter, Push nur mit neuem Browser-Besitznachweis.
 - Echte Push-Zustellung und physische Handy-Signale bleiben ein eigenes Gate,
   siehe [WEB-PUSH.md](WEB-PUSH.md) und [PILOT-CHECKLIST.md](PILOT-CHECKLIST.md).
+
+## Counter-/Alarm-Rollout v0.7.0
+
+Vor dem nächsten Upload: `npm test` und `npm audit`, lokales Chrome-Layout und
+Druckbeleg prüfen. Der Stand enthält `qrcode` zusätzlich zu `web-push`; Lockfile
+mit hochladen und `npm ci --omit=dev` verwenden. Bestehendes Volume/Schlüssel
+beibehalten. Die additive Counter-Migration legt bei Bestand eine geschützte
+`.pre-counter-migration.sqlite` an, deren Löschschwelle 48 Stunden beträgt.
+
+Live prüfen: Staff-Anmeldung, nur Kassennummer erfassen, Beleg mit QR + Nummer +
+Code, QR-Scan ohne Kundenfelder, manueller Nummer-/Code-Weg, Einmal-Besitzbindung,
+Ticket/Ready/Bestätigung/Abmeldung, Datenschutz, API `no-store`, Manifest/Worker.
+Nur eigene Testtickets verändern und danach entfernen. Das erste und finale
+Manifest müssen vor/nach Start EU-only zeigen. Browser-Layouts und Mock-Tests
+belegen keine neue physische Android-Alarmfolge.
 
 ## Betrieb und Abnahme
 

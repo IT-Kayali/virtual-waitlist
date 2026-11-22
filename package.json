@@ -1,6 +1,6 @@
 {
   "name": "virtual-waitlist",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Virtuelle Warteliste für Cafés und Restaurants – ersetzt physische Pager durch eine browserbasierte Warteschlange.",
   "main": "server.js",
   "scripts": {
@@ -12,6 +12,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "qrcode": "1.5.4",
     "web-push": "4.0.0"
   }
 }

@@ -29,18 +29,20 @@ Der aktuelle Produktivstand steht in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
      Gäste-Seite und Ticket.
    - **„Fast dran"-Schwelle** einstellen (Standard: 2).
    - Geschäfts-PIN ändern.
-3. Zwei QR-Codes im Dashboard ausdrucken:
-   - **Selbstbedienung** (`/b/<slug>`) – Gäste tragen ihre Bestellung selbst ein.
-   - **Tresen/Kiosk** (`/b/<slug>/kiosk`) – der Kunde scannt nur, das Personal
-     trägt die Bestellung auf dem Handy des Kunden ein.
+3. Im Personal-Dashboard die bereits vergebene Kassennummer eingeben. QueueUp
+   erzeugt einen eigenen Abholbeleg mit persönlichem QR, Nummer und Abholcode
+   gleichzeitig. Der allgemeine Kunden-QR öffnet alternativ die Nummer-/Code-
+   Eingabe. Keine POS-/Bondrucker-Integration. Details: [WEB-PUSH.md](docs/WEB-PUSH.md).
 
 ### Für Mitarbeiter
 
 - Login am Dashboard (`/b/<slug>/staff`) mit Geschäfts-PIN **oder** eigener
   Mitarbeiter-PIN. Mit Mitarbeiter-PIN werden „Ready"- und „Abgeholt"-Aktionen
   dem Mitarbeiter zugeordnet (Grundlage für den Report).
-- Live-Ansicht der Warteschlange und Abholliste, **Ready 🔔** pro Eintrag,
-  manuell Bestellungen hinzufügen (z. B. Telefon), Tages-Statistiken.
+- Live-Warteschlange und Abholliste, **Aufrufen** und **Abgeholt** pro Eintrag.
+- Nur die echte Kassennummer erfassen. **QR / Beleg** zeigt den persönlichen
+  Abholbeleg erneut. Neue Kundentickets haben keine Namen/Bestellnotizen.
+- `/b/<slug>/kiosk` ist ebenfalls die Personal-Oberfläche mit Anmeldung.
 
 ### Öffentliche Webseite (Marketing, Kontakt, Preise)
 
@@ -73,29 +75,34 @@ Registrierung und Login für Geschäfte liegen unter `/anmelden`.
 
 ### Für Gäste
 
-1. QR-Code scannen oder Link öffnen.
-2. Nummer erhalten – die Ticket-Seite zeigt **Nummer, Wartende davor, gesamte
-   Warteschlangen-Länge und geschätzte Wartezeit** und aktualisiert sich
-   automatisch (alle 3 Sekunden).
-3. **„Fast dran"-Benachrichtigung** (Ton + Vibration + Hinweis), sobald nur
-   noch so viele Gäste davor sind, wie das Geschäft eingestellt hat.
-4. Sobald die Bestellung fertig ist: sichtbarer grüner Hinweis. Nach bewusstem
-   **Ton aktivieren / testen** wiederholte Melodie auf der offenen Seite.
-   Ton und Vibration sind geräteabhängig, keine Garantie für gesperrte Handys.
-5. Ab v0.6.0 optionaler Web-Push-Aufruf nach ausdrücklicher Erlaubnis. Auf
-   iPhone/iPad zuerst die Home-Screen-Web-App öffnen, dann dort beitreten.
-   Alte Tickets bleiben In-Page-Tickets. Details: [WEB-PUSH.md](docs/WEB-PUSH.md).
-6. Kein Gästekonto. Lokaler Browser-Speicher hält Ticket, Zugriffsschlüssel
-   und Sprache; bei Push kommt der jeweilige Browseranbieter als Transport hinzu.
+1. Persönlichen QR auf dem Abholbeleg scannen. Ohne QR: Nummer und Abholcode
+   vom selben Beleg auf `/b/<slug>/` eingeben. Kein Name, Konto oder Bestelltext.
+2. Ein vorbereiteter Knopf bietet sofort die optionale Push-Erlaubnis an.
+   Ohne Push geht es ebenfalls weiter. Ein Seitenaufruf allein erzwingt keinen
+   nativen Dialog. Installation wird angeboten, soweit der Browser sie erlaubt.
+3. Das Ticket zeigt Nummer, Position nach Erfassungsreihenfolge, Anzahl und
+   geschätzte Wartezeit, mit Aktualisierung alle drei Sekunden.
+4. Bei Ready: grüner Hinweis und optional Push. Geplant sind ein Aufruf und
+   zwei Erinnerungen im Abstand von etwa 30 Sekunden. Bestätigung durch Öffnen,
+   Wegwischen oder Tippen auf das bereite Ticket beendet weitere Jobs, sobald
+   der Server sie erhält. Bestätigung ist nicht gleich Abholung.
+5. Android bestimmt den Systemton. Eigener Web-Push-Alarmton, DND-Umgehung und
+   garantierte Lautstärke sind nicht möglich. Für In-Page-Melodie einmal
+   **Ton aktivieren / testen** antippen und das Ticket offen halten.
+6. iPhone/iPad: zuerst ab iOS 16.4 die Home-Screen-App installieren und dort
+   Nummer plus Code eingeben. Bereits an Safari gebundene Tickets werden nicht
+   automatisch übertragen. Details: [WEB-PUSH.md](docs/WEB-PUSH.md).
 
-Nummern starten pro Geschäft täglich neu. Die Wartezeit-Schätzung nutzt die
-tatsächliche durchschnittliche Bedienzeit des Geschäfts an diesem Tag
-(Fallback: 5 Min. pro Bestellung).
+Die Kassennummer ist pro Geschäft und UTC-Tag eindeutig; QueueUp erzeugt sie
+nicht mehr selbst. QR und Abholcode verbinden das Ticket einmalig mit einem
+Browser. Die Wartezeit bleibt eine Schätzung aus den Tageswerten, Fallback
+fünf Minuten pro Bestellung.
 
 ## Datenschutz (DSGVO)
 
-- **Datenminimierung:** Name und Bestellnotiz sind freiwillig. Keine
-  Gäste-Konten und kein Werbe-Tracking. Bei optionalem Push transportiert der
+- **Datenminimierung:** Neue Counter-Tickets erfassen keinen Gastnamen und
+  keine Bestellnotiz. Ältere freiwillige Angaben bleiben nur bis zur Löschung.
+  Keine Gäste-Konten und kein Werbe-Tracking. Bei optionalem Push transportiert der
   Browseranbieter eine verschlüsselte Nachricht ohne Name/Bestellnotiz.
 - **Automatische Löschung:** abgeschlossene/stornierte Tickets nach
   einem Alter von **24 Stunden**, alle Tickets ab **48 Stunden**,
@@ -166,21 +173,22 @@ Einrichtung, benötigte Schlüssel, Grenzen und ausstehende Sandbox-Abnahme:
 Gäste-Seiten (Beitritt, Kiosk, Ticket) und die Registrierung sind mehrsprachig:
 **Englisch, Deutsch, Arabisch** (inkl. RTL). Umschalten auf der Seite oder per
 `?lang=de|en|ar`. Neue Sprache = ein Eintrag in `public/i18n.js`.
-Die öffentliche Marketing-Webseite ist Deutsch. Das Personal-Dashboard ist aktuell Englisch.
+Die öffentliche Marketing-Webseite ist Deutsch. Der Counter-Kern des Personal-
+Dashboards ist Deutsch; ältere Verwaltungsbereiche sind teilweise Englisch.
 
 ## Projektstruktur
 
 ```
+counter.js            Sichere Belegcodes, QR-Erzeugung und einmalige Browser-Zuordnung
 push.js               Verschlüsselte Push-Anmeldungen, VAPID, persistente Outbox
 public/pwa.js         PWA-Einrichtung und ausdrücklicher Push-Opt-in
 public/sw.js          Push-Anzeige und sichere Ticket-Klickziele, kein API-Cache
 server.js             Backend: HTTP-Server, REST-API, SQLite-Schema, Migration, Löschjob
 public/landing.html   SaaS-Startseite (Registrierung/Login)
 public/landing.js
-public/index.html     Gäste-Beitritt (Selbstbedienung, /b/<slug>)
-public/join.js
-public/kiosk.html     Tresen-Bildschirm (/b/<slug>/kiosk)
-public/kiosk.js
+public/index.html     Kundeneingabe Nummer + Code bzw. persönlicher QR-Claim
+public/claim.js
+public/counter.css    Counter-, Beleg- und Drucklayout
 public/ticket.html    Live-Ticket-Seite (/b/<slug>/ticket)
 public/ticket.js
 public/staff.html     Personal-Dashboard + Inhaber-Bereich (/b/<slug>/staff)

@@ -36,12 +36,16 @@ Eine Browser-Simulation ist hierfür kein Ersatz.
 | Gerät / Browser | Ticket im Vordergrund | Gerät gesperrt | Ergebnis / Einschränkung |
 |---|---|---|---|
 | iPhone / tatsächlich verwendeter Browser | offen | offen | noch nicht getestet |
-| Android / tatsächlich verwendeter Browser | offen | offen | noch nicht getestet |
+| Android / Version noch nicht dokumentiert | v0.6-Zustellung vom Nutzer bestätigt | nicht getrennt belegt | v0.7-Erinnerungsfolge noch offen |
 
 Für jede Kombination:
 
-1. Als Gast über den echten QR-Code beitreten und das Ticket öffnen. Alle
-   notwendigen Nutzeraktionen für Ton oder Berechtigungen bewusst ausführen.
+1. Personal trägt die Kassennummer ein und druckt den QueueUp-Beleg mit QR,
+   Nummer und Abholcode. Einmal über QR ohne Dateneingabe, mit einem neuen Beleg
+   separat über Nummer plus Code verbinden. Ein zweiter fremder Browser darf
+   denselben bereits verbundenen Beleg nicht übernehmen.
+   Alle Nutzeraktionen für Ton/Push bewusst ausführen; Permission nie auf
+   Seitenaufruf erzwingen. Installationsangebot und iOS-Home-Screen-Reihenfolge prüfen.
 2. Über das Personal-Gerät die Warteschlange so ändern, dass zuerst die
    "Fast dran"-Schwelle erreicht wird, dann das Ticket auf "bereit" setzen.
 3. Im Vordergrund prüfen: aktualisierte Position/Status, sichtbarer Hinweis,
@@ -52,8 +56,15 @@ Für jede Kombination:
    Festhalten, ob und wann überhaupt ein Signal ankommt und wann der Status
    nach dem Entsperren aktualisiert wird. Hintergrund-Tabs bei Bedarf als
    weitere eigene Testbedingung erfassen.
-5. Verhalten beim kurzen Verbindungsabbruch und nach erneutem Öffnen prüfen.
+5. Pro Aufruf initialen Push und bis zu zwei Erinnerungen nach etwa 30 Sekunden
+   prüfen. Danach kein weiterer neuer Aufruf ohne Statuswechsel. Öffnen,
+   Wegwischen und Tippen auf das bereite Ticket separat testen: Bestätigung
+   beendet weitere Jobs, setzt aber nicht abgeholt. Alte Bestätigung darf einen
+   neuen Aufruf nicht beenden. Offline kann eine Bestätigung scheitern.
+6. Verhalten beim kurzen Verbindungsabbruch und nach erneutem Öffnen prüfen.
    Stornierte oder abgeholte Tickets dürfen nicht weiter als wartend erscheinen.
+   Android-Ton/Pop-up am echten Gerät einstellen; eigener Web-Push-Alarmton und
+   DND-Umgehung sind nicht zugesagt. Ausdruck mit echtem Scanner und Drucker prüfen.
 
 **Keine Zusage für Sperrbildschirm oder Hintergrundbetrieb.** Das aktuelle
 Browser-Ticket ist kein garantierter Push-Pager. Betriebssystem, Browser,

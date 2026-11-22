@@ -109,10 +109,12 @@ function browserNotice(ticket, body, persistent = false) {
   } catch { notificationFailed = true; updateSoundControls(); }
 }
 function acknowledgeReady() {
-  if (currentTicket?.status === 'ready') {
+  if (currentTicket?.status === 'ready' && !readyAcknowledged) {
     readyAcknowledged = true;
     stopBeeping();
     vibrate(0);
+    $('ticketSub').textContent=t('call_seen');
+    if(ownerToken && Number.isSafeInteger(currentTicket.call_version)) api(`${BASE}/ticket/${ticketId}/ack`,{method:'POST',body:JSON.stringify({version:currentTicket.call_version})}).catch(()=>{});
   }
 }
 window.addEventListener('pointerdown', acknowledgeReady);
@@ -142,14 +144,16 @@ function alertReady(ticket) {
 }
 
 function render(ticket) {
-  if (ticket.status === 'ready' && currentTicket?.status !== 'ready') {
+  if (ticket.status === 'ready' && (currentTicket?.status !== 'ready' || ticket.call_version!==currentTicket?.call_version)) {
     readyShown = false;
-    readyAcknowledged = false;
+    readyAcknowledged = !!ticket.call_seen;
     readyNotificationSent = false;
   }
+  if(ticket.call_seen) {readyAcknowledged=true;stopBeeping();vibrate(0);}
   currentTicket = ticket;
   $('venueName').textContent = ticket.venue;
   $('ticketNumber').textContent = ticket.number;
+  $('ticketNumber').style?.setProperty('--digits',String(ticket.number).length);
   $('wrap').classList.toggle('is-ready', ticket.status === 'ready');
   if (ticket.status !== 'ready') {
     stopBeeping();
@@ -171,7 +175,7 @@ function render(ticket) {
     $('statsRow').classList.add('hidden');
     if (ticket.status === 'ready') {
       $('ticketStatus').textContent = t('status_ready');
-      $('ticketSub').textContent = t('status_ready_sub');
+      $('ticketSub').textContent = t(readyAcknowledged?'call_seen':'status_ready_sub');
       $('leaveBtn').classList.remove('hidden');
       // Also alert on first load if it is already ready.
       alertReady(ticket);

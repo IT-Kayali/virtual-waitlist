@@ -1,22 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>QueueUp – Staff Dashboard</title>
-<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/styles.css?v=0.7.0">
+<link rel="stylesheet" href="/counter.css?v=0.7.0">
 </head>
 <body>
 
 <!-- PIN-Login -->
 <div class="login-wrap" id="loginWrap">
   <div class="card">
-    <h1>Staff Login</h1>
-    <p class="muted">Enter the staff PIN for this business (business PIN or your personal employee PIN).</p>
+    <h1>Personal-Anmeldung</h1>
+    <p class="muted">Mit der Geschäfts-PIN oder der eigenen Mitarbeiter-PIN anmelden.</p>
     <form id="loginForm">
       <input type="password" id="pinInput" placeholder="PIN" inputmode="numeric" autocomplete="off">
       <p class="error" id="loginError"></p>
-      <button type="submit" class="btn primary full">Log in</button>
+      <button type="submit" class="btn primary full">Anmelden</button>
     </form>
   </div>
 </div>
@@ -27,7 +28,7 @@
     <h1 id="dashVenue">QueueUp</h1>
     <div>
       <span class="muted" id="whoami"></span>
-      <button class="btn ghost small" id="logoutBtn">Log out</button>
+      <button class="btn ghost small" id="logoutBtn">Abmelden</button>
     </div>
   </div>
 
@@ -38,37 +39,50 @@
     <div class="stat-box"><div class="stat-num" id="statAvg">–</div><div class="stat-lbl">Avg. min</div></div>
   </div>
 
+  <section class="card staff-add" id="counterCard">
+    <h2>Nummer vom Kassensystem</h2>
+    <p class="muted">Nur die vergebene Nummer eingeben. Der Abholbeleg enthält QR und Abholcode gleichzeitig. Keine Kundendaten.</p>
+    <form id="addForm">
+      <label for="addNumber" class="sr-only">Kassennummer</label>
+      <input type="text" id="addNumber" inputmode="numeric" pattern="[0-9]{1,9}" maxlength="9" placeholder="Kassennummer, z. B. 42" autocomplete="off" required>
+      <button type="submit" class="btn primary" id="addBtn">Abholbeleg erzeugen</button>
+    </form>
+    <p class="error" id="addError" role="alert"></p>
+  </section>
+  <section class="card receipt-panel hidden" id="receiptPanel" aria-label="Abholbeleg">
+    <div class="receipt-brand">QueueUp</div>
+    <div class="receipt-venue" id="receiptVenue"></div>
+    <p>Deine Abholnummer</p>
+    <div class="claim-number" id="receiptNumber" dir="ltr"></div>
+    <img id="receiptQr" class="receipt-qr" alt="QR-Code zum Verbinden dieses Tickets">
+    <p>Scannen. Mitteilungen erlauben. Fertig.</p>
+    <p class="receipt-or">Oder Nummer und Abholcode eingeben:</p>
+    <div class="receipt-code" id="receiptCode" dir="ltr"></div>
+    <div class="receipt-url" id="receiptUrl" dir="ltr"></div>
+    <p class="muted receipt-small">Einmalig mit deinem eigenen Browser verbinden. Beleg und QR nicht weitergeben.</p>
+    <p id="receiptState" class="muted no-print"></p>
+    <div class="btn-row no-print">
+      <button type="button" class="btn primary" id="printReceiptBtn">Beleg drucken</button>
+      <button type="button" class="btn ghost" id="closeReceiptBtn">Schließen</button>
+    </div>
+    <p class="muted receipt-small no-print">Eigener QueueUp-Beleg. Keine direkte Anbindung an Kassensoftware oder Bondrucker.</p>
+  </section>
+
   <div class="queue-section">
-    <h2>Waiting</h2>
+    <h2>Wartend</h2>
     <div class="queue-list" id="waitingList"></div>
   </div>
 
   <div class="queue-section">
-    <h2>Ready for pickup</h2>
+    <h2>Zur Abholung aufgerufen</h2>
     <div class="queue-list" id="readyList"></div>
   </div>
 
-  <div class="card staff-add">
-    <h2>Add order manually</h2>
-    <form id="addForm">
-      <input type="text" id="addName" placeholder="Name (optional)">
-      <input type="text" id="addNote" placeholder="Order / note">
-      <button type="submit" class="btn primary">Add</button>
-    </form>
-  </div>
-
   <div class="card qr-card">
-    <h2>QR code: self-service</h2>
-    <p class="muted">Guests scan this and join the queue themselves.</p>
-    <img id="qrImg" alt="QR code for the join page">
+    <h2>Allgemeiner Kunden-Zugang</h2>
+    <p class="muted">Dieser QR öffnet die Eingabe von Nummer und Abholcode. Der persönliche QR steht auf dem jeweiligen Abholbeleg.</p>
+    <img id="qrImg" alt="QR-Code zur Nummern- und Abholcode-Eingabe">
     <div class="qr-url" id="joinUrl"></div>
-  </div>
-
-  <div class="card qr-card">
-    <h2>QR code: counter / kiosk</h2>
-    <p class="muted">For the counter screen: the customer scans, your staff fills in the order on the customer's phone.</p>
-    <img id="qrKioskImg" alt="QR code for the counter page">
-    <div class="qr-url" id="kioskUrl"></div>
   </div>
 
   <div class="card">
@@ -142,6 +156,6 @@
   </div>
 </div>
 
-<script src="/staff.js"></script>
+<script src="/staff.js?v=0.7.0"></script>
 </body>
 </html>

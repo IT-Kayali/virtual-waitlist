@@ -29,14 +29,19 @@ an genau ein Geschäft gebunden) · Inhaber (E-Mail + Passwort, `kind=owner`).
 |---|---|---|
 | GET | `/api/b/:slug/settings` | Öffentliche Daten: `{"venue","slug","has_logo"}`. |
 | GET | `/api/b/:slug/logo` | Logo-Datei (404 wenn keins). PNG/JPEG/WebP/SVG. |
-| POST | `/api/b/:slug/join` | Gast reiht sich ein. Body: `{"name","note","source","guest_token"}` (alle optional; `source`: `guest` \| `counter` für den Tresen-Bildschirm). |
+| POST | `/api/b/:slug/join` | Ab v0.7.0 eingestellt, HTTP 410. Neue Tickets erzeugt nur das Personal anhand der Kassennummer. |
+| POST | `/api/b/:slug/claim/preview` | JSON `{id,key}` aus persönlichem QR oder `{number,code}` vom Beleg. Prüft Besitzbeleg, gibt nur id/number/venue/claimed zurück. |
+| POST | `/api/b/:slug/claim/connect` | Derselbe Beleg plus `guest_token` (64 Hexzeichen). Ordnet einmalig dem Browser zu. Derselbe Token darf nach Verbindungsabbruch wiederholen; anderer Browser wird abgewiesen. |
 | GET | `/api/b/:slug/ticket/:id` | Ticket-Status (Polling). Bei mit `guest_token` erstellten Tickets Header `X-Ticket-Token` erforderlich (oder Personal desselben Geschäfts). |
 | POST | `/api/b/:slug/ticket/:id/cancel` | Warteschlange verlassen (`waiting` oder `ready`); Besitznachweis wie beim Lesen. |
+| POST | `/api/b/:slug/ticket/:id/ack` | JSON `version`, dazu Browser-Header `X-Ticket-Token` oder auf genau diesen Aufruf begrenzter HMAC `ack`. Stoppt Erinnerungen, markiert nicht abgeholt. |
 
 `guest_token` ist ein vom Gäste-Browser erzeugter 64-stelliger Hex-String
 (32 Zufallsbytes), nicht vom Server öffentlich zurücklesbar. Aktuelle Gäste-
-Oberflächen verwenden ihn immer. Ältere Clients ohne Token bleiben kompatibel,
-aber ohne Push; ihre öffentlichen Ticketdaten enthalten keinen Namen/Notiz.
+Oberflächen verwenden ihn immer. Neue Counter-Tickets verlangen vor der
+Zuordnung den Beleg und danach diesen Browser-Schlüssel. Ältere gespeicherte
+Tickets ohne Token bleiben kompatibel, aber ohne Push; öffentlich keine Namen/
+Notizen. Claim-Prüfung und Zuordnung sind auf 300 Versuche/Geschäft/Minute begrenzt.
 
 ## Web Push ab v0.6.0
 
@@ -59,7 +64,9 @@ aber keinen API-Fetch-Handler. Mehr: [WEB-PUSH.md](WEB-PUSH.md).
 | POST | `/api/b/:slug/staff/login` | Body: `{"pin"}` – **Geschäfts-PIN oder Mitarbeiter-PIN**. Antwort enthält `kind` (`pin`/`employee`). |
 | POST | `/api/staff/logout` | Session beenden. |
 | GET | `/api/staff/queue` | Live-Warteschlange: `{"venue","slug","kind","employee","has_logo","notify_ahead","waiting":[...],"ready":[...],"stats":{"waiting","ready","served","avg_minutes"}}`. |
-| POST | `/api/staff/add` | Manuell hinzufügen. Body: `{"name","note"}` (`source=staff`). |
+| POST | `/api/staff/add` | Kassennummer erfassen: JSON `{number}` als Integer 1..999999999. Keine Namen/Notizen. Antwort `entry` und persönlicher `receipt` mit QR, Code und URLs. Nummer pro Geschäft/UTC-Tag eindeutig. |
+| GET | `/api/staff/entry/:id/receipt` | Nur eigenes Geschäft: denselben persönlichen Beleg erneut abrufen. Keine Zuordnungsübertragung. |
+| GET | `/api/staff/qr` | Lokales SVG und URL für den allgemeinen Nummer-/Code-Zugang. Kein persönlicher Besitzlink. |
 | POST | `/api/staff/entry/:id/status` | Status setzen: `ready` \| `done` \| `waiting` \| `cancelled`. Bei Mitarbeiter-Session werden `ready_by`/`done_by` gesetzt. |
 | POST | `/api/staff/settings` | `{"venue_name"}` (alle Rollen); `{"new_pin"}` und `{"notify_ahead": 0-20}` **nur Inhaber**. |
 | POST | `/api/staff/logo` | Logo hochladen. Body: `{"data":"data:image/png;base64,..."}`, max. 2 MB, PNG/JPEG/WebP/SVG. |
@@ -103,16 +110,19 @@ Seite: `/admin` (deutsch).
 
 ```json
 {
-  "id": 1, "number": 1, "name": "Alex", "note": "2 Cappuccino",
-  "status": "waiting", "source": "guest",
+  "id": 1, "number": 42, "name": "", "note": "",
+  "status": "waiting", "source": "counter",
   "created_at": "2026-11-22 00:13:09", "ready_at": null,
   "ahead": 0, "waiting_total": 3, "notify_ahead": 2,
-  "est_minutes": 5, "venue": "QueueUp Café", "slug": "demo", "push_eligible": true
+  "est_minutes": 5, "venue": "QueueUp Café", "slug": "demo", "push_eligible": true,
+  "has_receipt": true, "call_version": 0, "call_seen": false
 }
 ```
 
-- `number` läuft **pro Geschäft und Tag** von 1 hoch.
-- `ahead` = wartende Tickets mit kleinerer Nummer; `waiting_total` = alle Wartenden.
+- `number` ist die vom Personal eingegebene Kassennummer, je Geschäft/UTC-Tag eindeutig.
+- `ahead` = früher erfasste wartende Tickets; `waiting_total` = alle Wartenden.
+- `has_receipt` signalisiert einen neuen sicheren Beleg, nicht seinen geheimen Wert.
+- `call_version`/`call_seen` betreffen die aktuelle Aufrufbestätigung, keine Abholung.
 - `notify_ahead` = „Fast dran"-Schwelle des Geschäfts.
 - `est_minutes` = `ahead` × tatsächliche Ø-Bedienzeit des Tages (Fallback 5 Min.).
 - `source`: `guest` (selbst eingereiht) \| `counter` (Tresen/Kiosk) \| `staff` (manuell).
@@ -127,8 +137,9 @@ Seite: `/admin` (deutsch).
 | `/kontakt` | Kontaktformular |
 | `/impressum`, `/datenschutz` | Rechtstext-Entwürfe |
 | `/abo` | Abo-Verwaltung, nur Inhaber dürfen Änderungen ausführen |
-| `/b/<slug>` | Gäste-Beitritt (Selbstbedienung) |
-| `/b/<slug>/kiosk` | Tresen-Bildschirm (Personal trägt Bestellung ein) |
+| `/b/<slug>` | Nummer und Abholcode vom Beleg eingeben |
+| `/b/<slug>/claim#…` | Persönlichen QR zuordnen, danach Fragment entfernen |
+| `/b/<slug>/kiosk` | Personal-Oberfläche mit Anmeldung und Belegerzeugung |
 | `/b/<slug>/ticket?id=…` | Live-Ticket |
 | `/b/<slug>/staff` | Personal-Dashboard + Inhaber-Bereich |
 | `/privacy`, `/b/<slug>/privacy` | Datenschutzerklärung |
@@ -144,7 +155,11 @@ Seite: `/admin` (deutsch).
 - `employees`: id, business_id, name, pin_hash+pin_salt, active, created_at.
 - `sessions`: token, business_id, kind (`pin`|`owner`|`employee`), employee_id, created_at.
 - `entries`: id, business_id, day, number, name, note, status, source,
-  created_at, ready_at, done_at, ready_by, done_by. Unique: (business_id, day, number).
+  created_at, ready_at, done_at, ready_by, done_by, guest_token_hash,
+  ready_version, ready_ack_version, counter_nonce. Unique: (business_id, day, number).
+- `push_subscriptions`: verschlüsselte Endpunkte/Schlüssel, Ablauf und letzte Aufrufversion.
+- `push_outbox`: dauerhafte Jobs mit Aufrufversion, reminder_index (0..2), Retry/Ablauf.
+- `push_vapid_cache`: verschlüsselte, zeitlich begrenzte Anbieter-Autorisierung.
 
 Alle Passwörter/PINs werden mit scrypt + Zufalls-Salt gehasht.
 Gäste-Daten werden automatisch gelöscht (siehe README, DSGVO).

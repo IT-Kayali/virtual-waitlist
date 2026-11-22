@@ -348,12 +348,12 @@ function avgServiceMinutes(bizId, day) {
 }
 function ticketView(e, biz) {
   const ahead = e.status === 'waiting'
-    ? db.prepare("SELECT COUNT(*) AS c FROM entries WHERE business_id = ? AND day = ? AND status = 'waiting' AND number < ?")
-        .get(e.business_id, e.day, e.number).c
+    ? db.prepare("SELECT COUNT(*) AS c FROM entries WHERE business_id = ? AND day = ? AND status = 'waiting' AND id < ?")
+        .get(e.business_id, e.day, e.id).c
     : 0;
   return {
     id: e.id, number: e.number, name: e.name, note: e.note, status: e.status, source: e.source,
-    created_at: e.created_at, ready_at: e.ready_at, ahead,
+    created_at: e.created_at, ready_at: e.ready_at, ahead, call_version:e.ready_version, call_seen:e.ready_ack_version>=e.ready_version && e.status==='ready', has_receipt:!!e.counter_nonce,
     waiting_total: db.prepare("SELECT COUNT(*) AS c FROM entries WHERE business_id = ? AND day = ? AND status = 'waiting'")
       .get(e.business_id, e.day).c,
     notify_ahead: biz.notify_ahead,
@@ -370,10 +370,11 @@ function queueStats(bizId, day) {
 const pushSubject = process.env.PUBLIC_BASE_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '');
 const pushEnabled = /^https:\/\/[^/]+\/?$/.test(pushSubject);
 const push = require('./push')({db, configDir: DATA_DIR, subject: pushSubject || 'https://localhost'});
-const {hash: pushHash, validToken: validGuestToken} = require('./push');
+// Browser proof helpers are owned by the push/counter modules.
+const counter = require('./counter')({db,push,configDir:DATA_DIR,baseURL:pushSubject || `http://localhost:${PORT}`});
 function guestAllowed(req, entry) {
-  if (!entry.guest_token_hash) return true; // Bereits bestehende Tickets bleiben nutzbar.
   const session = currentSession(req);
+  if (!entry.guest_token_hash) return !entry.counter_nonce || session?.business_id===entry.business_id;
   return session?.business_id === entry.business_id || push.authorized(entry, req.headers['x-ticket-token']);
 }
 
@@ -471,7 +472,8 @@ route('GET', '/api/b/:slug/logo', async (req, res, _u, p) => {
   const biz = getBusiness(p.slug);
   const file = biz && logoPath(biz);
   if (!file || !fs.existsSync(file)) return send(res, 404, { error: 'Kein Logo.' });
-  res.writeHead(200, { 'Content-Type': LOGO_MIME[biz.logo_ext], 'Cache-Control': 'public, max-age=300' });
+  res.writeHead(200, { 'Content-Type': LOGO_MIME[biz.logo_ext], 'Cache-Control': 'public, max-age=300',
+    ...(biz.logo_ext==='.svg'?{'Content-Security-Policy':"sandbox; default-src 'none'; style-src 'unsafe-inline'"}:{}) });
   fs.createReadStream(file).pipe(res);
 });
 
@@ -500,24 +502,30 @@ route('POST', '/api/staff/logo/remove', async (req, res, _u, _p, _q, session) =>
   send(res, 200, { ok: true });
 }, { staff: true });
 
-// Gast tritt bei (Selbstbedienung oder Tresen/Kiosk)
-route('POST', '/api/b/:slug/join', async (req, res, _u, p) => {
-  const biz = getBusiness(p.slug);
-  if (!biz) return send(res, 404, { error: 'Geschaeft nicht gefunden.' });
-  const b = await readBody(req);
-  const name = String(b.name || '').trim().slice(0, 60);
-  const note = String(b.note || '').trim().slice(0, 200);
-  const source = ['guest', 'counter'].includes(b.source) ? b.source : 'guest';
-  const day = today();
-  const next = db.prepare('SELECT COALESCE(MAX(number), 0) + 1 AS n FROM entries WHERE business_id = ? AND day = ?').get(biz.id, day).n;
-  const info = db.prepare(
-    'INSERT INTO entries (business_id, day, number, name, note, source) VALUES (?,?,?,?,?,?)'
-  ).run(biz.id, day, next, name, note, source);
-  if (b.guest_token !== undefined && validGuestToken(b.guest_token)) {
-    db.prepare('UPDATE entries SET guest_token_hash=? WHERE id=?').run(pushHash(b.guest_token),info.lastInsertRowid);
-  }
-  const e = db.prepare('SELECT * FROM entries WHERE id = ?').get(info.lastInsertRowid);
-  send(res, 200, { ticket: ticketView(e, biz) });
+// Old public creation is deliberately retired. Staff issue a receipt instead.
+route('POST', '/api/b/:slug/join', async (_req,res) => send(res,410,{error:'Bitte die Nummer und den Abholcode vom Counter-Beleg verwenden oder dessen QR scannen.'}));
+const claimBudgets=new Map();
+for(const action of ['preview','connect']) route('POST',`/api/b/:slug/claim/${action}`,async(req,res,_u,p)=>{
+  const biz=getBusiness(p.slug);
+  if(!biz) return send(res,404,{error:'Geschaeft nicht gefunden.'});
+  const minute=Math.floor(Date.now()/60000), previous=claimBudgets.get(biz.id);
+  const budget=previous?.minute===minute?previous:{minute,count:0};claimBudgets.set(biz.id,budget);
+  if(++budget.count>300) return send(res,429,{error:'Zu viele Versuche. Bitte in einer Minute erneut versuchen.'});
+  const body=await readBody(req,2000);
+  try {
+    const entry=counter.find(biz,body);
+    if(action==='preview') return send(res,200,{id:entry.id,number:entry.number,venue:biz.name,claimed:!!entry.guest_token_hash});
+    const claimed=counter.claim(entry,body.guest_token);
+    send(res,200,{ticket:ticketView(claimed,biz)});
+  } catch(error) {send(res,400,{error:error.message});}
+});
+route('POST','/api/b/:slug/ticket/:id/ack',async(req,res,_u,p)=>{
+  const {e}=ticketForGuest(p.slug,p.id);
+  if(!e) return send(res,404,{error:'Ticket nicht gefunden.'});
+  const body=await readBody(req,2000);
+  if(!push.authorized(e,req.headers['x-ticket-token'])&&!push.validAck(e,body.version,body.ack)) return send(res,403,{error:'Kein gueltiger Besitznachweis.'});
+  push.acknowledge(e,body.version);
+  send(res,200,{ok:true});
 });
 
 function ticketForGuest(slug, id) {
@@ -605,7 +613,7 @@ route('GET', '/api/staff/queue', async (req, res, _u, _p, _q, session) => {
   const biz = session.business;
   const day = today();
   const waiting = db.prepare(
-    "SELECT * FROM entries WHERE business_id = ? AND day = ? AND status = 'waiting' ORDER BY number").all(biz.id, day);
+    "SELECT * FROM entries WHERE business_id = ? AND day = ? AND status = 'waiting' ORDER BY id").all(biz.id, day);
   const ready = db.prepare(
     "SELECT * FROM entries WHERE business_id = ? AND day = ? AND status = 'ready' ORDER BY ready_at").all(biz.id, day);
   send(res, 200, {
@@ -619,18 +627,22 @@ route('GET', '/api/staff/queue', async (req, res, _u, _p, _q, session) => {
 }, { staff: true });
 
 route('POST', '/api/staff/add', async (req, res, _u, _p, _q, session) => {
-  const biz = session.business;
-  const b = await readBody(req);
-  const name = String(b.name || '').trim().slice(0, 60);
-  const note = String(b.note || '').trim().slice(0, 200);
-  const day = today();
-  const next = db.prepare('SELECT COALESCE(MAX(number), 0) + 1 AS n FROM entries WHERE business_id = ? AND day = ?').get(biz.id, day).n;
-  const info = db.prepare(
-    "INSERT INTO entries (business_id, day, number, name, note, source) VALUES (?,?,?,?,?,'staff')"
-  ).run(biz.id, day, next, name, note);
-  const e = db.prepare('SELECT * FROM entries WHERE id = ?').get(info.lastInsertRowid);
-  send(res, 200, { entry: ticketView(e, biz) });
+  const body=await readBody(req,2000);
+  try {
+    const entry=counter.issue(session.business,body.number,today());
+    send(res,200,{entry:ticketView(entry,session.business),receipt:await counter.receipt(entry,session.business)});
+  } catch(error) {send(res,400,{error:error.message});}
 }, { staff: true });
+route('GET','/api/staff/entry/:id/receipt',async(_req,res,_u,p,_q,session)=>{
+  const entry=db.prepare('SELECT * FROM entries WHERE id=? AND business_id=?').get(Number(p.id),session.business_id);
+  if(!entry) return send(res,404,{error:'Eintrag nicht gefunden.'});
+  try {send(res,200,{receipt:await counter.receipt(entry,session.business)});}
+  catch(error){send(res,400,{error:error.message});}
+},{staff:true});
+route('GET','/api/staff/qr',async(_req,res,_u,_p,_q,session)=>{
+  const url=new URL(`/b/${session.business.slug}/`,pushSubject||`http://localhost:${PORT}`).href;
+  send(res,200,{url,qr_svg:await require('qrcode').toString(url,{type:'svg',margin:4,width:240})});
+},{staff:true});
 
 route('POST', '/api/staff/entry/:id/status', async (req, res, _u, p, _q, session) => {
   const biz = session.business;
@@ -971,7 +983,7 @@ const server = http.createServer(async (req, res) => {
 
     // Seiten-Routing
     let file = pathname;
-    const bizPage = pathname.match(/^\/b\/([^/]+)(\/(ticket|staff|kiosk|privacy))?\/?$/);
+    const bizPage = pathname.match(/^\/b\/([^/]+)(\/(ticket|staff|kiosk|privacy|claim))?\/?$/);
     const pageMap = {
       '/': '/home.html',
       '/anmelden': '/landing.html',
@@ -988,7 +1000,7 @@ const server = http.createServer(async (req, res) => {
     } else if (bizPage) {
       file = bizPage[3] === 'ticket' ? '/ticket.html'
         : bizPage[3] === 'staff' ? '/staff.html'
-        : bizPage[3] === 'kiosk' ? '/kiosk.html'
+        : bizPage[3] === 'kiosk' ? '/staff.html'
         : bizPage[3] === 'privacy' ? '/privacy.html'
         : '/index.html';
     }

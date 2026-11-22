@@ -63,23 +63,29 @@ $('logoutBtn').onclick = async () => {
 // ---------- Dashboard ----------
 function entryHtml(e, isReady) {
   const actions = isReady
-    ? `<button class="btn ready small" data-act="done" data-id="${e.id}">Picked up ✓</button>
-       <button class="btn ghost small" data-act="waiting" data-id="${e.id}">Back to queue</button>`
-    : `<button class="btn primary small" data-act="ready" data-id="${e.id}">Ready 🔔</button>
-       <button class="btn danger small" data-act="cancelled" data-id="${e.id}">Cancel</button>`;
+    ? `<button class="btn ready small" data-act="done" data-id="${e.id}">Abgeholt ✓</button>
+       <button class="btn ghost small" data-act="waiting" data-id="${e.id}">Zurück auf wartend</button>`
+    : `<button class="btn primary small" data-act="ready" data-id="${e.id}">Aufrufen 🔔</button>
+       <button class="btn danger small" data-act="cancelled" data-id="${e.id}">Stornieren</button>`;
   const src = e.source === 'counter' ? '<span class="src-badge">counter</span>' : '';
   return `<div class="q-entry ${isReady ? 'is-ready' : ''}">
     <div class="q-num">#${e.number}</div>
     <div class="q-info">
-      <div class="q-name">${esc(e.name || 'Guest')} ${src}</div>
+      <div class="q-name">${esc(e.name || 'Abholbeleg')} ${src}</div>
       ${e.note ? `<div class="q-note">${esc(e.note)}</div>` : ''}
-      <div class="q-wait">${isReady ? 'called' : `waiting ${waitMinutes(e.created_at)} min`}</div>
+      <div class="q-wait">${isReady ? (e.call_seen?'Aufruf gesehen':'aufgerufen') : `wartet ${waitMinutes(e.created_at)} Min.`}${e.push_eligible?' · Ticket verbunden':''}</div>
     </div>
-    <div class="q-actions">${actions}</div>
+    <div class="q-actions">${e.has_receipt?`<button class="btn ghost small" data-receipt="${e.id}">QR / Beleg</button>`:''}${actions}</div>
   </div>`;
 }
 
 function bindActions() {
+  document.querySelectorAll('[data-receipt]').forEach(button=>button.onclick=async()=>{
+    button.disabled=true;
+    try {const data=await api(`/api/staff/entry/${button.dataset.receipt}/receipt`);showReceipt(data.receipt);}
+    catch(error){$('addError').textContent=error.message;}
+    finally{button.disabled=false;}
+  });
   document.querySelectorAll('[data-act]').forEach((b) => {
     b.onclick = async () => {
       b.disabled = true;
@@ -140,12 +146,10 @@ async function refresh() {
 function showDash() {
   $('loginWrap').classList.add('hidden');
   $('dashWrap').classList.remove('hidden');
-  const joinUrl = location.origin + '/b/' + SLUG;
-  const kioskUrl = joinUrl + '/kiosk';
-  $('joinUrl').textContent = joinUrl;
-  $('qrImg').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(joinUrl);
-  $('kioskUrl').textContent = kioskUrl;
-  $('qrKioskImg').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(kioskUrl);
+  api('/api/staff/qr').then(data=>{
+    $('joinUrl').textContent=data.url;
+    $('qrImg').src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(data.qr_svg);
+  }).catch(()=>{$('joinUrl').textContent=location.origin+'/b/'+SLUG+'/';});
   api('/api/staff/queue').then((d) => {
     $('venueInput').value = d.venue;
     applyKind(d.kind, d.employee);
@@ -160,15 +164,27 @@ function showDash() {
   pollTimer = setInterval(refresh, 3000);
 }
 
-$('addForm').onsubmit = async (e) => {
-  e.preventDefault();
-  await api('/api/staff/add', {
-    method: 'POST',
-    body: JSON.stringify({ name: $('addName').value, note: $('addNote').value }),
-  });
-  $('addName').value = '';
-  $('addNote').value = '';
-  refresh();
+function showReceipt(receipt) {
+  $('receiptVenue').textContent=receipt.venue;
+  $('receiptNumber').textContent=receipt.number;
+  $('receiptNumber').style.setProperty('--digits',String(receipt.number).length);
+  $('receiptCode').textContent=receipt.code;
+  $('receiptUrl').textContent=receipt.manual_url;
+  $('receiptQr').src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(receipt.qr_svg);
+  $('receiptState').textContent=receipt.claimed?'Dieser Beleg ist bereits mit einem Kunden-Browser verbunden.':'Noch nicht mit einem Kunden-Browser verbunden.';
+  $('receiptPanel').classList.remove('hidden');
+  $('receiptPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('printReceiptBtn').onclick=()=>{document.body.classList.add('print-receipt');window.print();};
+window.addEventListener('afterprint',()=>document.body.classList.remove('print-receipt'));
+$('closeReceiptBtn').onclick=()=>{$('receiptPanel').classList.add('hidden');$('addNumber').focus();};
+$('addForm').onsubmit=async event=>{
+  event.preventDefault();$('addError').textContent='';$('addBtn').disabled=true;
+  try {
+    const data=await api('/api/staff/add',{method:'POST',body:JSON.stringify({number:Number($('addNumber').value)})});
+    $('addNumber').value='';showReceipt(data.receipt);await refresh();
+  } catch(error){$('addError').textContent=error.message;}
+  finally{$('addBtn').disabled=false;}
 };
 
 $('saveVenueBtn').onclick = async () => {

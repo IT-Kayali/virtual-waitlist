@@ -43,6 +43,7 @@ module.exports = function pushStore({db, configDir, subject, now = Date.now, del
     db.exec('ALTER TABLE entries ADD COLUMN guest_token_hash TEXT');
   }
   if (!db.prepare("SELECT 1 FROM pragma_table_info('entries') WHERE name='ready_version'").get()) db.exec('ALTER TABLE entries ADD COLUMN ready_version INTEGER NOT NULL DEFAULT 0');
+  if (!db.prepare("SELECT 1 FROM pragma_table_info('entries') WHERE name='ready_ack_version'").get()) db.exec('ALTER TABLE entries ADD COLUMN ready_ack_version INTEGER NOT NULL DEFAULT -1');
   db.exec(`
     CREATE TABLE IF NOT EXISTS push_subscriptions (
       id INTEGER PRIMARY KEY AUTOINCREMENT, entry_id INTEGER NOT NULL, business_id INTEGER NOT NULL,
@@ -60,6 +61,17 @@ module.exports = function pushStore({db, configDir, subject, now = Date.now, del
     CREATE INDEX IF NOT EXISTS push_ticket_idx ON push_subscriptions(entry_id, business_id);
     CREATE TABLE IF NOT EXISTS push_vapid_cache (origin TEXT PRIMARY KEY, encrypted TEXT NOT NULL, created_at INTEGER NOT NULL);
   `);
+  if (!db.prepare("SELECT 1 FROM pragma_table_info('push_outbox') WHERE name='reminder_index'").get()) db.exec('ALTER TABLE push_outbox ADD COLUMN reminder_index INTEGER NOT NULL DEFAULT 0');
+  function capability(purpose,...parts) { return crypto.createHmac('sha256',key).update(JSON.stringify(['queueup-cap-v1',purpose,...parts])).digest('hex'); }
+  function validAck(entry,version,token) {
+    if (!entry || !Number.isSafeInteger(version) || version!==entry.ready_version || !validToken(token)) return false;
+    return crypto.timingSafeEqual(Buffer.from(token,'hex'),Buffer.from(capability('ack',entry.business_id,entry.id,version),'hex'));
+  }
+  function acknowledge(entry,version) {
+    if (entry.status!=='ready' || version!==entry.ready_version) return;
+    db.prepare('UPDATE entries SET ready_ack_version=? WHERE id=? AND ready_version=?').run(version,entry.id,version);
+    db.prepare('DELETE FROM push_outbox WHERE entry_id=? AND ready_version=?').run(entry.id,version);
+  }
   function seal(value) {
     const iv = crypto.randomBytes(12), cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
     cipher.setAAD(Buffer.from('queueup-push-v1'));
@@ -81,8 +93,10 @@ module.exports = function pushStore({db, configDir, subject, now = Date.now, del
     db.prepare('DELETE FROM push_subscriptions WHERE entry_id=?').run(id);
   }
   function cleanup() {
-    const backup = path.join(configDir,'.pre-push-migration.sqlite');
-    if (fs.existsSync(backup) && now()-fs.statSync(backup).mtimeMs>48*3600000) fs.unlinkSync(backup);
+    for(const name of ['.pre-push-migration.sqlite','.pre-counter-migration.sqlite']) {
+      const backup=path.join(configDir,name);
+      if(fs.existsSync(backup)&&now()-fs.statSync(backup).mtimeMs>48*3600000)fs.unlinkSync(backup);
+    }
     const rows = db.prepare(`SELECT s.id FROM push_subscriptions s LEFT JOIN entries e ON e.id=s.entry_id
       LEFT JOIN businesses b ON b.id=s.business_id WHERE s.expires_at<=? OR e.id IS NULL
       OR e.status NOT IN ('waiting','ready') OR b.active!=1 OR b.id IS NULL`).all(now());
@@ -95,7 +109,7 @@ module.exports = function pushStore({db, configDir, subject, now = Date.now, del
     return crypto.timingSafeEqual(Buffer.from(entry.guest_token_hash, 'hex'), Buffer.from(hash(token), 'hex'));
   }
   function enqueue(entry, onlySubscription) {
-    if (entry.status !== 'ready') return;
+    if (entry.status !== 'ready' || entry.ready_ack_version>=entry.ready_version) return;
     const subscriptions = db.prepare('SELECT id,last_sent_version FROM push_subscriptions WHERE entry_id=? AND business_id=? AND expires_at>?').all(entry.id, entry.business_id, now());
     const insert = db.prepare('INSERT OR IGNORE INTO push_outbox(subscription_id,entry_id,business_id,ready_version,next_attempt,expires_at) VALUES (?,?,?,?,?,?)');
     for (const s of subscriptions) if ((!onlySubscription || onlySubscription === s.id) && s.last_sent_version < entry.ready_version) {
@@ -142,17 +156,19 @@ module.exports = function pushStore({db, configDir, subject, now = Date.now, del
       if (stopped) break;
       const s = db.prepare('SELECT * FROM push_subscriptions WHERE id=?').get(job.subscription_id);
       const e = db.prepare('SELECT e.*,b.active,b.slug FROM entries e JOIN businesses b ON b.id=e.business_id WHERE e.id=?').get(job.entry_id);
-      if (!s || !e || !e.active || e.status !== 'ready' || e.ready_version !== job.ready_version || job.expires_at<=now()) {
+      if (!s || !e || !e.active || e.status !== 'ready' || e.ready_version !== job.ready_version || e.ready_ack_version>=e.ready_version || job.expires_at<=now()) {
         db.prepare('DELETE FROM push_outbox WHERE id=?').run(job.id); continue;
       }
       try {
         const subscription = validateSubscription(open(s.encrypted));
         const payload = {type:'ready',slug:e.slug,id:e.id,number:e.number,version:e.ready_version,
-          lang:s.lang,expiresAt:job.expires_at};
+          lang:s.lang,expiresAt:job.expires_at,reminder:job.reminder_index,ack:capability('ack',e.business_id,e.id,e.ready_version)};
         await deliver(subscription, JSON.stringify(payload), {TTL:Math.max(1,Math.min(60,Math.floor((job.expires_at-now())/1000))),
           urgency:'high',topic:hash(`${e.business_id}:${e.id}`).slice(0,32),timeout:8000,
           vapidDetails:null,headers:{Authorization:authorization(subscription.endpoint)}});
-        db.prepare("UPDATE push_outbox SET status='sent',attempts=attempts+1 WHERE id=?").run(job.id);
+        if (job.reminder_index<2) {
+          db.prepare("UPDATE push_outbox SET reminder_index=reminder_index+1,attempts=0,next_attempt=? WHERE id=?").run(now()+30000,job.id);
+        } else db.prepare("UPDATE push_outbox SET status='sent',attempts=attempts+1 WHERE id=?").run(job.id);
         db.prepare('UPDATE push_subscriptions SET last_sent_version=MAX(last_sent_version,?) WHERE id=?').run(e.ready_version,s.id);
       } catch (error) {
         // Never log endpoints, keys, payloads or provider response bodies.
@@ -176,7 +192,7 @@ module.exports = function pushStore({db, configDir, subject, now = Date.now, del
   }
   function start() { if (!timer) { tick(); timer=setInterval(tick,2000);timer.unref(); } }
   async function stop() { stopped=true; clearInterval(timer); if (running) await running; }
-  return {publicKey:identity.publicKey,authorized,subscribe,unsubscribe,subscribed,onStatus,removeTicket,cleanup,start,stop,tick};
+  return {publicKey:identity.publicKey,capability,validAck,acknowledge,authorized,subscribe,unsubscribe,subscribed,onStatus,removeTicket,cleanup,start,stop,tick};
 };
 module.exports.hash = hash;
 module.exports.validToken = validToken;
