@@ -41,6 +41,17 @@ strikt getrennt von allen anderen.
 - Live-Ansicht der Warteschlange und Abholliste, **Ready 🔔** pro Eintrag,
   manuell Bestellungen hinzufügen (z. B. Telefon), Tages-Statistiken.
 
+### Für den Plattform-Betreiber (SaaS-Inhaber)
+
+- Admin-Bereich unter **`/admin`** (Login mit E-Mail + Passwort aus den
+  Umgebungsvariablen `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
+- Übersicht über **alle** registrierten Geschäfte mit Live-Zahlen:
+  wartend/bereit/bedient heute, Tickets gesamt, Mitarbeiter, Logo,
+  Registrierungsdatum.
+- **Sperren/Entsperren** pro Geschäft: Ein gesperrtes Geschäft ist sofort
+  komplett offline (Kundenseite, Ticket-APIs, Personal-Login; laufende
+  Sessions werden beendet), bis es wieder entsperrt wird.
+
 ### Für Gäste
 
 1. QR-Code scannen oder Link öffnen.
@@ -92,6 +103,8 @@ in das Demo-Geschäft migriert; alte Links (`/ticket?id=…`) leiten sauber um.
 | `PORT` | `3000` | HTTP-Port (auf Railway automatisch gesetzt) |
 | `STAFF_PIN` | `0000` | Personal-PIN des **Demo-Geschäfts** (nur Erstsetup/Migration) – **immer setzen!** |
 | `DATA_DIR` | `./data` | Verzeichnis für SQLite-Datei und Logos. Auf Railway: `/data` (Volume) |
+| `ADMIN_EMAIL` | – | E-Mail des Plattform-Admins (`/admin`). Ohne diese Variablen ist der Admin-Bereich deaktiviert. |
+| `ADMIN_PASSWORD` | – | Passwort des Plattform-Admins – **immer setzen und geheim halten!** |
 
 ## Dokumentation
 
@@ -120,6 +133,8 @@ public/ticket.html    Live-Ticket-Seite (/b/<slug>/ticket)
 public/ticket.js
 public/staff.html     Personal-Dashboard + Inhaber-Bereich (/b/<slug>/staff)
 public/staff.js
+public/admin.html     Plattform-Admin (/admin, SaaS-Inhaber)
+public/admin.js
 public/privacy.html   Datenschutzerklärung (/privacy, /b/<slug>/privacy)
 public/privacy.js
 public/i18n.js        Sprachdateien (EN/DE/AR)

@@ -38,6 +38,17 @@ an genau ein Geschäft gebunden) · Inhaber (E-Mail + Passwort, `kind=owner`).
 | POST | `/api/staff/logo` | Logo hochladen. Body: `{"data":"data:image/png;base64,..."}`, max. 2 MB, PNG/JPEG/WebP/SVG. |
 | POST | `/api/staff/logo/remove` | Logo entfernen. |
 
+## Plattform-Admin (SaaS-Inhaber, Zugang via `ADMIN_EMAIL`/`ADMIN_PASSWORD`)
+
+| Methode | Pfad | Zweck |
+|---|---|---|
+| POST | `/api/admin/login` | Body: `{"email","password"}`. Setzt Cookie `admin_sid`. 403 wenn nicht konfiguriert. |
+| POST | `/api/admin/logout` | Admin-Session beenden. |
+| GET | `/api/admin/overview` | Alle Geschäfte mit Live-Zahlen: `{"count","businesses":[{"id","slug","name","email","active","created_at","has_logo","notify_ahead","employees","waiting","ready","served_today","tickets_total"}]}`. |
+| POST | `/api/admin/business/:id/active` | Sperren/Entsperren. Body: `{"active": true|false}`. Beim Sperren werden alle Sessions des Geschäfts gelöscht; Kunden- und Personal-Endpunkte liefern danach 404. |
+
+Seite: `/admin` (deutsch).
+
 ## Inhaber: Mitarbeiter & Reports
 
 | Methode | Pfad | Zweck |
@@ -75,13 +86,15 @@ an genau ein Geschäft gebunden) · Inhaber (E-Mail + Passwort, `kind=owner`).
 | `/b/<slug>/ticket?id=…` | Live-Ticket |
 | `/b/<slug>/staff` | Personal-Dashboard + Inhaber-Bereich |
 | `/privacy`, `/b/<slug>/privacy` | Datenschutzerklärung |
+| `/admin` | Plattform-Admin (SaaS-Inhaber) |
 | `/ticket?id=…` (alt) | 302-Umleitung auf `/b/<slug>/ticket?id=…` |
 | `/staff` (alt) | 302-Umleitung auf `/` |
 
 ## Datenmodell (SQLite)
 
 - `businesses`: id, slug (unique), name, email (unique), pass_hash+salt,
-  pin_hash+pin_salt, logo_ext, notify_ahead (Default 2), created_at.
+  pin_hash+pin_salt, logo_ext, notify_ahead (Default 2), active (Sperrung), created_at.
+- `admin_sessions`: token, created_at (Plattform-Admin, 12 h).
 - `employees`: id, business_id, name, pin_hash+pin_salt, active, created_at.
 - `sessions`: token, business_id, kind (`pin`|`owner`|`employee`), employee_id, created_at.
 - `entries`: id, business_id, day, number, name, note, status, source,

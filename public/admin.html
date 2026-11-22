@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QueueUp – Plattform-Admin</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<!-- Admin-Login -->
+<div class="login-wrap" id="loginWrap">
+  <div class="card">
+    <h1>Plattform-Admin</h1>
+    <p class="muted">Zugang für den SaaS-Inhaber (über alle Geschäfte).</p>
+    <form id="loginForm">
+      <label>E-Mail</label>
+      <input type="email" id="emailInput" autocomplete="username">
+      <label>Passwort</label>
+      <input type="password" id="passInput" autocomplete="current-password">
+      <p class="error" id="loginError"></p>
+      <button type="submit" class="btn primary full">Einloggen</button>
+    </form>
+  </div>
+</div>
+
+<!-- Admin-Dashboard -->
+<div class="staff-wrap hidden" id="dashWrap">
+  <div class="staff-head">
+    <h1>Alle Geschäfte <span class="muted" id="bizCount"></span></h1>
+    <button class="btn ghost small" id="logoutBtn">Ausloggen</button>
+  </div>
+  <div id="bizList"></div>
+</div>
+
+<script src="/admin.js"></script>
+</body>
+</html>

@@ -12,7 +12,7 @@ aktuell live auf **Railway** als Multi-Tenant-SaaS.
 | Service | `virtual-waitlist` (ID `9a34dba5-aeda-46f3-9d4d-4e831f4c28ff`), **Region `europe-west4-drams3a` (EU West, Amsterdam)** |
 | URL | https://virtual-waitlist-production.up.railway.app |
 | Volume | `virtual-waitlist-volume`, gemountet auf `/data` (SQLite + Logos liegen dort) |
-| Env-Vars | `STAFF_PIN` (PIN des Demo-Geschäfts, Wert im Tresor), `DATA_DIR=/data`, `PORT` (von Railway) |
+| Env-Vars | `STAFF_PIN` (PIN des Demo-Geschäfts, Wert im Tresor), `ADMIN_EMAIL` + `ADMIN_PASSWORD` (Plattform-Admin `/admin`, Wert im Tresor), `DATA_DIR=/data`, `PORT` (von Railway) |
 | Konto | Agent-Mail-Konto, Zugangsdaten im Tresor des Besitzers (Eintrag „Railway") |
 
 **Hosting-Standort (DSGVO):** Die App und ihre Datenbank laufen in der
@@ -102,6 +102,8 @@ https://docs.railway.com/deployments/regions
   brauchen eine sichere Verbindung.
 
 ## Betrieb
+
+- **Plattform-Admin-Zugang ändern:** `npx railway variables --set "ADMIN_EMAIL=..." --set "ADMIN_PASSWORD=..."` (löst Redeploy aus).
 
 - **Demo-PIN ändern:** `npx railway variables --set "STAFF_PIN=<neue-PIN>"`
   (löst Redeploy aus). Gilt nur für das Demo-Geschäft; andere Geschäfte

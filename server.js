@@ -17,6 +17,8 @@ const { DatabaseSync } = require('node:sqlite');
 
 const PORT = process.env.PORT || 3000;
 const SEED_PIN = process.env.STAFF_PIN || '0000'; // PIN des Demo-Geschaefts (nur Erstsetup/Migration)
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase().trim();   // Plattform-Admin (SaaS-Inhaber)
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const LOGO_DIR = path.join(DATA_DIR, 'logos');
@@ -78,6 +80,7 @@ CREATE TABLE IF NOT EXISTS businesses (
   pin_salt TEXT NOT NULL,
   logo_ext TEXT,
   notify_ahead INTEGER NOT NULL DEFAULT 2,
+  active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS employees (
@@ -94,6 +97,10 @@ CREATE TABLE IF NOT EXISTS sessions (
   business_id INTEGER NOT NULL REFERENCES businesses(id),
   kind TEXT NOT NULL DEFAULT 'pin',           -- pin | owner | employee
   employee_id INTEGER REFERENCES employees(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  token TEXT PRIMARY KEY,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 `);
@@ -169,6 +176,9 @@ if (!db.prepare("SELECT 1 FROM pragma_table_info('businesses') WHERE name='logo_
 if (!db.prepare("SELECT 1 FROM pragma_table_info('businesses') WHERE name='notify_ahead'").get()) {
   db.exec('ALTER TABLE businesses ADD COLUMN notify_ahead INTEGER NOT NULL DEFAULT 2');
 }
+if (!db.prepare("SELECT 1 FROM pragma_table_info('businesses') WHERE name='active'").get()) {
+  db.exec('ALTER TABLE businesses ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
+}
 
 const LOGO_MIME = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml' };
 function logoPath(biz) {
@@ -177,7 +187,7 @@ function logoPath(biz) {
 
 // ---------- Helpers ----------
 function getBusiness(slug) {
-  return db.prepare('SELECT * FROM businesses WHERE slug = ?').get(slug);
+  return db.prepare('SELECT * FROM businesses WHERE slug = ? AND active = 1').get(slug);
 }
 function today() {
   return db.prepare("SELECT date('now') AS d").get().d;
@@ -197,10 +207,16 @@ function currentSession(req) {
   const s = db.prepare('SELECT * FROM sessions WHERE token = ?').get(sid);
   if (!s) return null;
   const session = { ...s, business: db.prepare('SELECT * FROM businesses WHERE id = ?').get(s.business_id) };
+  if (!session.business || !session.business.active) return null; // gesperrtes Geschaeft -> ausgeloggt
   if (s.employee_id) {
     session.employee = db.prepare('SELECT id, name FROM employees WHERE id = ? AND active = 1').get(s.employee_id) || null;
   }
   return session;
+}
+function currentAdmin(req) {
+  const sid = parseCookies(req).admin_sid;
+  if (!sid) return null;
+  return db.prepare('SELECT * FROM admin_sessions WHERE token = ?').get(sid) || null;
 }
 function readBody(req, limit = 1e5) {
   return new Promise((resolve, reject) => {
@@ -263,7 +279,7 @@ function queueStats(bizId, day) {
 // ---------- API ----------
 const routes = [];
 function route(method, pattern, handler, opts = {}) {
-  routes.push({ method, pattern, handler, staff: !!opts.staff, owner: !!opts.owner });
+  routes.push({ method, pattern, handler, staff: !!opts.staff, owner: !!opts.owner, admin: !!opts.admin });
 }
 
 // Geschaeft registrieren
@@ -403,6 +419,50 @@ route('POST', '/api/b/:slug/ticket/:id/cancel', async (req, res, _u, p) => {
   }
   send(res, 200, { ok: true });
 });
+
+// ---------- Plattform-Admin (SaaS-Inhaber) ----------
+route('POST', '/api/admin/login', async (req, res) => {
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    return send(res, 403, { error: 'Admin-Zugang ist nicht konfiguriert (ADMIN_EMAIL/ADMIN_PASSWORD).' });
+  }
+  const b = await readBody(req);
+  if (String(b.email || '').toLowerCase().trim() !== ADMIN_EMAIL || String(b.password || '') !== ADMIN_PASSWORD) {
+    return send(res, 401, { error: 'E-Mail oder Passwort falsch.' });
+  }
+  const token = crypto.randomBytes(24).toString('hex');
+  db.prepare('INSERT INTO admin_sessions (token) VALUES (?)').run(token);
+  send(res, 200, { ok: true }, { 'Set-Cookie': `admin_sid=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=43200` });
+});
+
+route('POST', '/api/admin/logout', async (req, res) => {
+  const sid = parseCookies(req).admin_sid;
+  if (sid) db.prepare('DELETE FROM admin_sessions WHERE token = ?').run(sid);
+  send(res, 200, { ok: true }, { 'Set-Cookie': 'admin_sid=; HttpOnly; Path=/; Max-Age=0' });
+});
+
+route('GET', '/api/admin/overview', async (req, res) => {
+  const day = today();
+  const rows = db.prepare('SELECT * FROM businesses ORDER BY created_at DESC').all().map((b) => ({
+    id: b.id, slug: b.slug, name: b.name, email: b.email, active: !!b.active,
+    created_at: b.created_at, has_logo: !!b.logo_ext, notify_ahead: b.notify_ahead,
+    employees: db.prepare('SELECT COUNT(*) AS c FROM employees WHERE business_id = ? AND active = 1').get(b.id).c,
+    waiting: db.prepare("SELECT COUNT(*) AS c FROM entries WHERE business_id = ? AND day = ? AND status = 'waiting'").get(b.id, day).c,
+    ready: db.prepare("SELECT COUNT(*) AS c FROM entries WHERE business_id = ? AND day = ? AND status = 'ready'").get(b.id, day).c,
+    served_today: db.prepare("SELECT COUNT(*) AS c FROM entries WHERE business_id = ? AND day = ? AND status = 'done'").get(b.id, day).c,
+    tickets_total: db.prepare('SELECT COUNT(*) AS c FROM entries WHERE business_id = ?').get(b.id).c,
+  }));
+  send(res, 200, { businesses: rows, count: rows.length });
+}, { admin: true });
+
+route('POST', '/api/admin/business/:id/active', async (req, res, _u, p) => {
+  const biz = db.prepare('SELECT * FROM businesses WHERE id = ?').get(Number(p.id));
+  if (!biz) return send(res, 404, { error: 'Geschaeft nicht gefunden.' });
+  const b = await readBody(req);
+  const active = b.active ? 1 : 0;
+  db.prepare('UPDATE businesses SET active = ? WHERE id = ?').run(active, biz.id);
+  if (!active) db.prepare('DELETE FROM sessions WHERE business_id = ?').run(biz.id); // alle Sessions beenden
+  send(res, 200, { ok: true, id: biz.id, active: !!active });
+}, { admin: true });
 
 // ---------- Personal-Endpunkte (Session an Geschaeft gebunden) ----------
 route('POST', '/api/staff/logout', async (req, res) => {
@@ -558,7 +618,8 @@ function cleanupOldData() {
   ).run();
   const r2 = db.prepare("DELETE FROM entries WHERE created_at < datetime('now','-2 days')").run();
   const r3 = db.prepare("DELETE FROM sessions WHERE created_at < datetime('now','-12 hours')").run();
-  const n = r1.changes + r2.changes + r3.changes;
+  const r4 = db.prepare("DELETE FROM admin_sessions WHERE created_at < datetime('now','-12 hours')").run();
+  const n = r1.changes + r2.changes + r3.changes + r4.changes;
   if (n > 0) console.log(`Datenloeschung: ${n} Datensaetze entfernt (Aufbewahrungsfrist).`);
 }
 cleanupOldData();
@@ -588,6 +649,10 @@ const server = http.createServer(async (req, res) => {
           const params = {};
           names.forEach((n, i) => { params[n] = match[i + 1]; });
           const session = currentSession(req);
+          const admin = currentAdmin(req);
+          if (r.admin && !admin) {
+            return send(res, 401, { error: 'Nicht als Admin angemeldet.' });
+          }
           if (r.staff && !session) {
             return send(res, 401, { error: 'Nicht angemeldet.' });
           }
@@ -616,8 +681,8 @@ const server = http.createServer(async (req, res) => {
     // Seiten-Routing
     let file = pathname;
     const bizPage = pathname.match(/^\/b\/([^/]+)(\/(ticket|staff|kiosk|privacy))?\/?$/);
-    if (pathname === '/' || pathname === '/privacy') {
-      file = pathname === '/' ? '/landing.html' : '/privacy.html';
+    if (pathname === '/' || pathname === '/privacy' || pathname === '/admin') {
+      file = pathname === '/' ? '/landing.html' : pathname === '/admin' ? '/admin.html' : '/privacy.html';
     } else if (bizPage) {
       file = bizPage[3] === 'ticket' ? '/ticket.html'
         : bizPage[3] === 'staff' ? '/staff.html'

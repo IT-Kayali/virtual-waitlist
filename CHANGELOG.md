@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.0 – 22.11.2026
+
+**Plattform-Admin (SaaS-Inhaber-Bereich).**
+
+- Neue Seite `/admin`: Login mit E-Mail + Passwort aus den Umgebungsvariablen
+  `ADMIN_EMAIL` / `ADMIN_PASSWORD` (ohne diese ist der Bereich deaktiviert).
+- Übersicht über **alle** Geschäfte mit Live-Zahlen (heute wartend/bereit/
+  bedient, Tickets gesamt, Mitarbeiter, Logo, Registrierungsdatum) plus
+  Direktlinks zu Kundenseite und Dashboard.
+- **Sperren/Entsperren** pro Geschäft: gesperrt = Kundenseite, Ticket-APIs,
+  Personal-Login und alle laufenden Sessions sofort deaktiviert (404),
+  Daten bleiben erhalten; Entsperren stellt alles wieder her.
+- Technik: `businesses.active`, eigene `admin_sessions`-Tabelle (12 h,
+  wird vom Löschjob mit aufgeräumt), Admin-Routen strikt getrennt von
+  Geschäfts-Sessions.
+- Getestet: Login (falsch/richtig/unkonfiguriert), Auth-Zwang, Sperren
+  (Kunde + Personal blockiert), Entsperren (alles wieder da).
+
 ## 0.2.0 – 22.11.2026
 
 **QueueUp wird ein Multi-Tenant-SaaS.** Beliebig viele Geschäfte auf einer
