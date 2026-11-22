@@ -2,6 +2,15 @@
 
 ## 0.5.0 - 22.11.2026
 
+- Live-Lasttest abgeschlossen: 960 Requests bei 10/50/100 parallelen
+  Abläufen, null Fehler, p95 324/549/619 ms. Umfang und Grenzen sowie
+  Rohdaten in `docs/LOAD-TEST.md` und `docs/test-results/load-test.json`.
+- Zahlungs-Konfiguration im Live-Admin visuell geprüft, ohne Schlüssel
+  gespeichert und nach Neuladen als deaktiviert bestätigt. Desktop-Billing
+  und mobile Startseite visuell geprüft. Echte Anbieter-Sandbox noch offen.
+- Veraltete pauschale Aussagen zu kostenlosem Railway-Weiterbetrieb und
+  dauerhafter Volume-Aufbewahrung aus der Betriebsdoku entfernt.
+
 - Anbieter-Einstellungen direkt im Admin: AES-GCM-verschlüsselt gespeichert,
   nur Maskierung/letzte Zeichen zurücklesbar, gezieltes Ersetzen/Löschen.
 - Integrierter Bereich `/abo` und Link im Inhaber-Dashboard; Tarifwahl bleibt
@@ -65,7 +74,7 @@
 - Getestet: Login (falsch/richtig/unkonfiguriert), Auth-Zwang, Sperren
   (Kunde + Personal blockiert), Entsperren (alles wieder da).
 
-Betriebshinweis: `railway up` setzt die Railway-Region auf den Standard (us-west2) zurueck; nach jedem Deploy `railway scale us-west2=0 eu-west=1` erneut anwenden (in DEPLOYMENT.md dokumentiert).
+Betriebshinweis: Bei früheren Uploads wurde ein Rückfall auf us-west2 beobachtet; nach jedem Deploy `railway scale us-west2=0 eu-west=1` erneut anwenden (in DEPLOYMENT.md dokumentiert).
 
 ## 0.2.0 – 22.11.2026
 

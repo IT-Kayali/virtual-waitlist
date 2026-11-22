@@ -22,15 +22,12 @@ Railway-Region **EU West (Amsterdam, Niederlande)**. Die Region wurde am
 in die neue Region migriert (kurzer Downtime während der Migration, Domain
 bleibt unverändert).
 
-**Kosten:** Railway-Testphase (30 Tage / 5 $ Guthaben, keine Kreditkarte),
-danach Free-Plan: 1 $ Nutzungsguthaben pro Monat, keine Karte nötig. Die App
-schläft bei Inaktivität und wacht bei der nächsten Anfrage auf; das Volume
-(0,5 GB) und die Daten **bleiben erhalten**, auch wenn das Guthaben aufgebraucht
-ist (Dienst pausiert dann bis zum nächsten Monat). Für Dauerbetrieb ohne
-Schlafmodus: Hobby-Plan 5 $/Monat.
-
-**Wichtig:** Die erste Anfrage nach Leerlauf kann einige Sekunden dauern
-(Aufwachen). Das ist normal.
+**Kosten und Laufzeit:** Der Betrieb nutzt das bestehende Railway-Testkonto.
+Restguthaben, Ablaufdatum und geltende Limits müssen im Railway-Konto geprüft
+werden. Ein dauerhafter kostenloser Weiterbetrieb oder eine unbegrenzte
+Aufbewahrung des Volumes nach Ablauf sind nicht zugesagt. Der Dienst kann
+pausieren. Vor Tarifwechsel oder Hinterlegen einer Zahlmethode ist eine neue
+Freigabe des Besitzers nötig. Regelmäßige eigene Backups sind erforderlich.
 
 ## Update-Ablauf (nach jeder Code-Änderung)
 

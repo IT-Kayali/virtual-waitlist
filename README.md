@@ -67,8 +67,8 @@ Registrierung und Login für Geschäfte liegen unter `/anmelden`.
   deaktivieren. Änderungen sind sofort auf `/preise` sichtbar.
 - **Abos** einsehen (Geschäft, Tarif, Anbieter, Status, Laufzeit).
 - **Webseiten-Inhalte** pflegen: Hero-Texte, Kontakt-E-Mail, Impressum,
-  Stand der Datenschutzerklärung – plus Status der Zahlungsanbieter-
-  Konfiguration (Stripe/PayPal, aus Umgebungsvariablen).
+  Stand der Datenschutzerklärung sowie Zahlungsanbieter-Einstellungen
+  (Modus, Basisadresse, verschlüsselte Stripe-/PayPal-Schlüssel).
 
 ### Für Gäste
 
@@ -144,14 +144,16 @@ Einrichtung, benötigte Schlüssel, Grenzen und ausstehende Sandbox-Abnahme:
 
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) – Live-Setup auf Railway, Update-Ablauf, Hosting-Standort
 - [docs/API.md](docs/API.md) – REST-API-Referenz
+- [docs/BILLING.md](docs/BILLING.md) – Abo-Zahlungen und Anbieter-Einrichtung
+- [docs/LOAD-TEST.md](docs/LOAD-TEST.md) – gemessener Lasttest mit 10/50/100 parallelen Abläufen
 - [CHANGELOG.md](CHANGELOG.md) – Änderungshistorie
 
 ## Sprachen
 
-Gäste-Seiten (Beitritt, Kiosk, Ticket) und die Startseite sind mehrsprachig:
+Gäste-Seiten (Beitritt, Kiosk, Ticket) und die Registrierung sind mehrsprachig:
 **Englisch, Deutsch, Arabisch** (inkl. RTL). Umschalten auf der Seite oder per
 `?lang=de|en|ar`. Neue Sprache = ein Eintrag in `public/i18n.js`.
-Das Personal-Dashboard ist aktuell Englisch.
+Die öffentliche Marketing-Webseite ist Deutsch. Das Personal-Dashboard ist aktuell Englisch.
 
 ## Projektstruktur
 
